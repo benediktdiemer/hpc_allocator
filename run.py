@@ -108,6 +108,7 @@ def collectGroupData(verbose = False):
     users = collectUserData(verbose = False)
     
     # Get group users
+    w_tot = 0.0
     groups = copy.copy(cfg.groups)
     for grp in groups.keys():
         groups[grp]['users'] = {}
@@ -129,7 +130,7 @@ def collectGroupData(verbose = False):
             raise Exception('Expected "# User quotas" in line 4 of output.')
 
         i += 2
-        w_tot = 0.0
+        w_grp = 0.0
         while i < len(ll):
             w = ll[i].split()
             usr = w[0]
@@ -145,21 +146,24 @@ def collectGroupData(verbose = False):
                 groups[grp]['users'][usr]['weight'] = users[usr]['weight']
             else:
                 groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
-            w_tot += groups[grp]['users'][usr]['weight']
+            w_grp += groups[grp]['users'][usr]['weight']
             i += 1
 
-        groups[grp]['weight'] = w_tot
+        groups[grp]['weight'] = w_grp
+        w_tot += w_grp
 
     if verbose:
         printLine()
         print('Group data')
         printLine()
         for grp in groups.keys():
-            print('%-10s scratch quota %.2e  scratch usage %.2e' % (grp, groups[grp]['scratch_quota'], groups[grp]['scratch_usage']))
+            print('%-20s   weight   scratch' % (grp))
             for usr in sorted(list(groups[grp]['users'].keys())):
-                print('    %-10s  %-3s  %.2f' % (usr, groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight']))
-            print('    ---------------------------------')
-            print('    TOTAL         %.2f' % (groups[grp]['weight']))
+                print('    %-12s %-3s   %.2f     %8.2e' % (usr, groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight'], groups[grp]['users'][usr]['scratch_usage']))
+            print('    -------------------------------------')
+            print('    TOTAL              %.2f     %8.2e' % (groups[grp]['weight'], groups[grp]['scratch_usage']))
+            print('    AVAILABLE         %5.2f     %8.2e' % (w_tot, groups[grp]['scratch_quota']))
+            print('    FRACTION          %4.1f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
             print()
         printLine()
                       
@@ -173,19 +177,20 @@ def getSizeFromString(num_str, unit_str):
 
     num = float(num_str)
     if unit_str.upper() == 'B':
-        fac = 1024.0**-9
-    elif unit_str.upper() == 'KB':
-        fac = 1024.0**-6
-    elif unit_str.upper() == 'MB':
         fac = 1024.0**-3
+    elif unit_str.upper() == 'KB':
+        fac = 1024.0**-2
+    elif unit_str.upper() == 'MB':
+        fac = 1024.0**-1
     elif unit_str.upper() == 'GB':
         fac = 1.0
     elif unit_str.upper() == 'TB':
-        fac = 1024.0**3
+        fac = 1024.0
     else:
         raise Exception('Unknown file size unit, "%s".' % (unit_str))
+    sze = num * fac
     
-    return num * fac
+    return sze
 
 ###################################################################################################
 
