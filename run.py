@@ -9,6 +9,7 @@
 import sys
 import argparse
 import subprocess
+import copy
 
 import config as cfg
 
@@ -27,7 +28,7 @@ def main():
 
 def main_local():
     
-    printConfig()
+    printConfig(verbose = True)
     
     return
 
@@ -57,9 +58,9 @@ def main_script():
 
 ###################################################################################################
 
-def printConfig():
+def printConfig(verbose = False):
     
-    collectGroupData()
+    collectGroupData(verbose = verbose)
     
     return
 
@@ -68,7 +69,7 @@ def printConfig():
 # Collect user data from a) email exploders and b) the users_extra dictionary in config, which can
 # be used to overwrite the former.
 
-def collectUserData(verbose = True):
+def collectUserData(verbose = False):
     
     users = {}
     
@@ -82,30 +83,116 @@ def collectUserData(verbose = True):
             users[uid] = {'people_type': ptype}
     
     users.update(cfg.users_extra)
-
-    if verbose:
-        user_names = sorted(list(users.keys()))
-        for i in range(len(user_names)):
-            print('%-10s  %s' % (user_names[i], users[user_names[i]]['people_type']))
     
+    if verbose:
+        printLine()
+        print('User data')
+        printLine()
+        usrs = sorted(list(users.keys()))
+        for i in range(len(usrs)):
+            usr = usrs[i]
+            s ='%-10s  %s' % (usr, users[usr]['people_type'])
+            if 'past_user' in users[usr]:
+                s += '  past user'
+            if 'weight' in users[usr]:
+                s += '  weight %.2f' % (users[usr]['weight'])
+            print(s)
+            
     return users
 
 ###################################################################################################
 
-def collectGroupData():
+def collectGroupData(verbose = False):
     
     # Get user data
-    users = collectUserData()
+    users = collectUserData(verbose = False)
     
     # Get group users
-    for grp in cfg.groups.keys():
-        cfg.groups[grp]['users'] = []
+    groups = copy.copy(cfg.groups)
+    for grp in groups.keys():
+        groups[grp]['users'] = {}
         
-        ret = subprocess.run(['scratch_quota', '--group' 'zt-%s' % (grp), '--users'], 
+        ret = subprocess.run(['scratch_quota', '--group', 'zt-%s' % (grp), '--users'], 
                              capture_output = True, text = True, check = True)
-        
-        print(ret)
+        rettxt = ret.stdout
+        ll = rettxt.splitlines()
+
+        i = 2
+        w = ll[i].split()
+        if w[0] != 'zt-%s' % (grp):
+            raise Exception('Expected "zt-%s" in third line of output.' % (grp))
+        groups[grp]['scratch_quota'] = getSizeFromString(w[3], w[4])
+        groups[grp]['scratch_usage'] = getSizeFromString(w[1], w[2])
+
+        i += 1
+        if ll[i].strip() != '# User quotas':
+            raise Exception('Expected "# User quotas" in line 4 of output.')
+
+        i += 2
+        w_tot = 0.0
+        while i < len(ll):
+            w = ll[i].split()
+            usr = w[0]
+            groups[grp]['users'][usr] = {}
+            groups[grp]['users'][usr]['scratch_usage'] = getSizeFromString(w[1], w[2])
+            if usr in users:
+                ptype = users[usr]['people_type']
+            else:
+                print('WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
+                ptype = 'tbd'
+            groups[grp]['users'][usr]['people_type'] = ptype
+            if (usr in users) and ('weight' in users[usr]):
+                groups[grp]['users'][usr]['weight'] = users[usr]['weight']
+            else:
+                groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
+            w_tot += groups[grp]['users'][usr]['weight']
+            i += 1
+
+        groups[grp]['weight'] = w_tot
+
+    if verbose:
+        printLine()
+        print('Group data')
+        printLine()
+        for grp in groups.keys():
+            print('%-10s scratch quota %.2e  scratch usage %.2e' % (grp, groups[grp]['scratch_quota'], groups[grp]['scratch_usage']))
+            for usr in sorted(list(groups[grp]['users'].keys())):
+                print('    %-10s  %-3s  %.2f' % (usr, groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight']))
+            print('    ---------------------------------')
+            print('    TOTAL         %.2f' % (groups[grp]['weight']))
+            print()
+        printLine()
+                      
+    return
+
+###################################################################################################
+
+# Outputs are like "5.02 TB" and such, which needs to be parsed to a number in GB.
+
+def getSizeFromString(num_str, unit_str):
+
+    num = float(num_str)
+    if unit_str.upper() == 'B':
+        fac = 1024.0**-9
+    elif unit_str.upper() == 'KB':
+        fac = 1024.0**-6
+    elif unit_str.upper() == 'MB':
+        fac = 1024.0**-3
+    elif unit_str.upper() == 'GB':
+        fac = 1.0
+    elif unit_str.upper() == 'TB':
+        fac = 1024.0**3
+    else:
+        raise Exception('Unknown file size unit, "%s".' % (unit_str))
     
+    return num * fac
+
+###################################################################################################
+
+def printLine():
+
+    print('--------------------------------------------------------------------------------')
+
     return
 
 ###################################################################################################

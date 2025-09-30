@@ -16,6 +16,8 @@ people_types['gs']  = {'desc': 'Grad student', 'weight': 0.15}
 people_types['ug']  = {'desc': 'Undergrad',    'weight': 0.05}
 people_types['tbd'] = {'desc': 'Unknown',      'weight': 0.0}
 
+weight_past_faculty = 0.5
+
 ###################################################################################################
 
 # Set user data. First we pull users automatically from a number of astro lists (email exploders)
@@ -28,6 +30,20 @@ astro_lists['postdocs-all']       = {'people_type': 'pd'}
 astro_lists['professorial']       = {'people_type': 'ttk'}
 
 users_extra = {}
+
+# Faculty who have left
+users_extra['tkomacek']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
+users_extra['ekempton']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
+
+# Current grad students
+users_extra['jdema']     = {'people_type': 'gs'}
+
+# Current undergrads
+users_extra['mlessard']     = {'people_type': 'ug'}
+
+# Past undergrads
+users_extra['zvladimi']     = {'people_type': 'ug',  'past_user': True}
+users_extra['wenxi523']     = {'people_type': 'ug',  'past_user': True}
 
 ###################################################################################################
 
