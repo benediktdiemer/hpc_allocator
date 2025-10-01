@@ -125,13 +125,13 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         output_file = open(pickle_file_grps_cur, 'wb')
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
-
-    if verbose:
-        utils.printLine()
-        print('Current group data')
-        utils.printLine()
-        printGroupData(grps_cur)
-        utils.printLine()
+    
+        if verbose:
+            utils.printLine()
+            print('Current group data')
+            utils.printLine()
+            printGroupData(grps_cur)
+            utils.printLine()
 
     # Load or update the group data to be used for computing quarterly allocations
     pickle_file_grps_q = '%s/groups_quarter_%02d_%04d_%d.pkl' % (pickle_dir, q_all, yr, q_yr)
@@ -158,7 +158,6 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
     
-    if verbose:
         utils.printLine()
         print('Quarter group data')
         utils.printLine()
@@ -237,24 +236,23 @@ def collectGroupData(verbose = False):
     w_tot = 0.0
     groups = copy.copy(cfg.groups)
     for grp in groups.keys():
+        
         groups[grp]['users'] = {}
         
+        # Analyze scratch_quota to get full user list
         ret = subprocess.run(['scratch_quota', '--group', 'zt-%s' % (grp), '--users'], 
                              capture_output = True, text = True, check = True)
         rettxt = ret.stdout
         ll = rettxt.splitlines()
-
         i = 2
         w = ll[i].split()
         if w[0] != 'zt-%s' % (grp):
             raise Exception('Expected "zt-%s" in third line of output.' % (grp))
         groups[grp]['scratch_quota'] = utils.getSizeFromString(w[3], w[4])
         groups[grp]['scratch_usage'] = utils.getSizeFromString(w[1], w[2])
-
         i += 1
         if ll[i].strip() != '# User quotas':
             raise Exception('Expected "# User quotas" in line 4 of output.')
-
         i += 2
         w_grp = 0.0
         while i < len(ll):
@@ -272,12 +270,35 @@ def collectGroupData(verbose = False):
                 groups[grp]['users'][usr]['weight'] = users[usr]['weight']
             else:
                 groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
+            groups[grp]['users'][usr]['su_used'] = 0.0
             w_grp += groups[grp]['users'][usr]['weight']
             i += 1
 
+        # Set group weight and add to total
         groups[grp]['weight'] = w_grp
         w_tot += w_grp
 
+        # Analyze s_balance to get SU usage
+        ret = subprocess.run(['sbalance', '-account', '%s-astr' % (grp), '--all'], 
+                             capture_output = True, text = True, check = True)
+        rettxt = ret.stdout
+        ll = rettxt.splitlines()
+        i = 1
+        w = ll[i].split()
+        groups[grp]['su_quota'] = float(w[1]) * 1000.0
+        i += 2
+        w = ll[i].split()
+        groups[grp]['su_used'] = float(w[1]) * 1000.0
+        i += 1
+        while i < len(ll):
+            w = ll[i].split()
+            if w[0] != 'User':
+                raise Exception('Expected "User" in sbalance return, found "%s".' % (w[0]))
+            usr = w[1].trim()
+            if not usr in groups[grp]['users']:
+                raise Exception('Found user "%s" in sbalance return but not in group users.' % (usr))
+            groups[grp]['users'][usr]['su_used'] = float(w[3]) * 1000.0
+            
     if verbose:
         utils.printLine()
         print('Group data')
@@ -298,11 +319,15 @@ def printGroupData(groups):
     for grp in groups.keys():
         print('%-20s   weight   scratch' % (grp))
         for usr in sorted(list(groups[grp]['users'].keys())):
-            print('    %-12s %-3s   %.2f     %8.2e' % (usr, groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight'], groups[grp]['users'][usr]['scratch_usage']))
+            print('    %-12s %-3s   %.2f     %8.2e     %8.2e' % (usr, 
+                        groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight'], 
+                        groups[grp]['users'][usr]['su_usage'], groups[grp]['users'][usr]['scratch_usage']))
         print('    -------------------------------------')
-        print('    TOTAL              %.2f     %8.2e' % (groups[grp]['weight'], groups[grp]['scratch_usage']))
-        print('    AVAILABLE         %5.2f     %8.2e' % (w_tot, groups[grp]['scratch_quota']))
-        print('    FRACTION          %4.1f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
+        print('    TOTAL              %.2f     %8.2e     %8.2e' % (groups[grp]['weight'], groups[grp]['su_usage'], groups[grp]['scratch_usage']))
+        print('    AVAILABLE         %5.2f     %8.2e     %8.2e' % (w_tot, groups[grp]['su_quota'], groups[grp]['scratch_quota']))
+        print('    FRACTION          %4.1f%%       %5.2f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 
+                        100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
+                        100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
         print()
     
     return
