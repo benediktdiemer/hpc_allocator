@@ -28,7 +28,7 @@ def main():
     
     if len(sys.argv) == 1:
         
-        checkStatus()
+        checkStatus(dry_run = True, verbose = True)
     
     else:
     
@@ -126,6 +126,13 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
 
+    if verbose:
+        utils.printLine()
+        print('Current group data')
+        utils.printLine()
+        printGroupData(grps_cur)
+        utils.printLine()
+
     # Load or update the group data to be used for computing quarterly allocations
     pickle_file_grps_q = '%s/groups_quarter_%02d_%04d_%d.pkl' % (pickle_dir, q_all, yr, q_yr)
     must_update_grp_q = False
@@ -150,6 +157,13 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         output_file = open(pickle_file_grps_q, 'wb')
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
+    
+    if verbose:
+        utils.printLine()
+        print('Quarter group data')
+        utils.printLine()
+        printGroupData(grps_cur)
+        utils.printLine()
 
     # Check for a new quarter and if it has changed, send out allocation details
     
@@ -268,18 +282,30 @@ def collectGroupData(verbose = False):
         utils.printLine()
         print('Group data')
         utils.printLine()
-        for grp in groups.keys():
-            print('%-20s   weight   scratch' % (grp))
-            for usr in sorted(list(groups[grp]['users'].keys())):
-                print('    %-12s %-3s   %.2f     %8.2e' % (usr, groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight'], groups[grp]['users'][usr]['scratch_usage']))
-            print('    -------------------------------------')
-            print('    TOTAL              %.2f     %8.2e' % (groups[grp]['weight'], groups[grp]['scratch_usage']))
-            print('    AVAILABLE         %5.2f     %8.2e' % (w_tot, groups[grp]['scratch_quota']))
-            print('    FRACTION          %4.1f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
-            print()
+        printGroupData(groups)
         utils.printLine()
-                      
+        
     return groups
+
+###################################################################################################
+
+def printGroupData(groups):
+
+    w_tot = 0.0
+    for grp in groups.keys():
+        w_tot += groups[grp]['weight']
+        
+    for grp in groups.keys():
+        print('%-20s   weight   scratch' % (grp))
+        for usr in sorted(list(groups[grp]['users'].keys())):
+            print('    %-12s %-3s   %.2f     %8.2e' % (usr, groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight'], groups[grp]['users'][usr]['scratch_usage']))
+        print('    -------------------------------------')
+        print('    TOTAL              %.2f     %8.2e' % (groups[grp]['weight'], groups[grp]['scratch_usage']))
+        print('    AVAILABLE         %5.2f     %8.2e' % (w_tot, groups[grp]['scratch_quota']))
+        print('    FRACTION          %4.1f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
+        print()
+    
+    return
 
 ###################################################################################################
 # Trigger
