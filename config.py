@@ -6,6 +6,10 @@
 #
 ###################################################################################################
 
+from collections import OrderedDict
+
+###################################################################################################
+
 # Set possible categories of HPC users and their allocation weights
 
 people_types = {}
@@ -63,5 +67,17 @@ groups['ricotti-prj']  = {'lead': 'ricotti'}
 groups['jsunshin-prj'] = {'lead': 'jsunshin'}
 groups['mwm-prj']      = {'lead': 'mwm'}
 groups['qye-prj']      = {'lead': 'qye'}
+
+###################################################################################################
+
+# Allocation periods. The allocation fraction is the fraction of the total SUs remaining that is
+# allocated to users, and it thus represents the product of the duration of the period and an
+# oversubscription factor.
+
+periods = OrderedDict()
+periods[0] = {'start_day': 0,  'alloc_frac':  0.7}
+periods[1] = {'start_day': 45, 'alloc_frac':  1.0}
+periods[2] = {'start_day': 70, 'alloc_frac':  3.0}
+periods[3] = {'start_day': 83, 'alloc_frac': 10.0}
 
 ###################################################################################################

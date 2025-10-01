@@ -10,8 +10,15 @@ import sys
 import argparse
 import subprocess
 import copy
+from datetime import date 
 
 import config as cfg
+
+###################################################################################################
+
+# Quarter counter starts in 2025/4; this is hard-coded and cannot be changed later
+first_quarter_year = 2025
+first_quarter_idx = 4
 
 ###################################################################################################
 
@@ -28,7 +35,8 @@ def main():
 
 def main_local():
     
-    printConfig(verbose = True)
+    #printConfig(verbose = True)
+    checkUsage()
     
     return
 
@@ -167,7 +175,7 @@ def collectGroupData(verbose = False):
             print()
         printLine()
                       
-    return
+    return groups
 
 ###################################################################################################
 
@@ -202,7 +210,50 @@ def printLine():
 
 ###################################################################################################
 
+def getTimes():
+
+    # Get current year and month    
+    date_today = date.today()
+    yr = date_today.year
+    mth = date_today.month
+    
+    # Determine quarter 
+    if mth >= 10:
+        q = 4
+    elif mth >= 7:
+        q = 3
+    elif mth >= 4:
+        q = 2
+    else:
+        q = 1
+    q_start = date.fromisoformat('%4d-%02d-01' % (yr, ((q - 1) * 3 + 1)))
+    q = (yr - first_quarter_year) * 4 + (q - first_quarter_idx)
+
+    # Determine days since beginning of quarter
+    delta = date_today - q_start
+    d = delta.days
+    
+    # Determine period from days
+    p = len(cfg.periods) - 1
+    while cfg.periods[p]['start_day'] > d:
+        p -= 1
+    
+    return q, p, d
+
+###################################################################################################
+
+# This function should be executed regularly. It:
+# 
+# - Compute the current quarter and period index from the date
+# - Checks whether a new quarter or period has started by comparing to the last known quarter and
+#   period numbers. If so,
+#   - Compute the base config for this quarter
+#   - Send out an allocation email
+
 def checkUsage(send_emails = False):
+    
+    q, p, d = getTimes()
+    print(q, p, d)
     
     return
 
