@@ -122,7 +122,7 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         print('Saving current group data to file...')
         dic = {}
         dic['grps_cur'] = grps_cur
-        output_file = open(pickle_file_cfg, 'wb')
+        output_file = open(pickle_file_grps_cur, 'wb')
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
 
@@ -135,7 +135,7 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
     else:
         if os.path.exists(pickle_file_grps_q):
             print('Quarter group data already up to date, loading from file...')
-            pFile = open(pickle_file_grps_cur, 'rb')
+            pFile = open(pickle_file_grps_q, 'rb')
             dic = pickle.load(pFile)
             pFile.close()
             grps_q = dic['grps_q']
@@ -147,7 +147,7 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         grps_q = copy.copy(grps_cur)    
         dic = {}
         dic['grps_q'] = grps_q
-        output_file = open(pickle_file_cfg, 'wb')
+        output_file = open(pickle_file_grps_q, 'wb')
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
 
