@@ -270,7 +270,8 @@ def collectGroupData(verbose = False):
                 groups[grp]['users'][usr]['weight'] = users[usr]['weight']
             else:
                 groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
-            groups[grp]['users'][usr]['su_used'] = 0.0
+            groups[grp]['users'][usr]['su_usage'] = 0.0
+            groups[grp]['users'][usr]['shell_usage'] = 0.0
             w_grp += groups[grp]['users'][usr]['weight']
             i += 1
 
@@ -288,17 +289,46 @@ def collectGroupData(verbose = False):
         groups[grp]['su_quota'] = float(w[1]) * 1000.0
         i += 2
         w = ll[i].split()
-        groups[grp]['su_used'] = float(w[1]) * 1000.0
+        groups[grp]['su_usage'] = float(w[1]) * 1000.0
         i += 1
         while i < len(ll):
             w = ll[i].split()
             if w[0] != 'User':
                 raise Exception('Expected "User" in sbalance return, found "%s".' % (w[0]))
-            usr = w[1].trim()
+            usr = w[1].strip()
             if not usr in groups[grp]['users']:
                 raise Exception('Found user "%s" in sbalance return but not in group users.' % (usr))
-            groups[grp]['users'][usr]['su_used'] = float(w[3]) * 1000.0
+            groups[grp]['users'][usr]['su_usage'] = float(w[3]) * 1000.0
+            i += 1
             
+        # Analyze shell_quota
+        groups[grp]['shell_quota'] = 1.0
+        groups[grp]['shell_usage'] = 0.5
+        #ret = subprocess.run(['shell_quota', '--proj', grp, '--show-vol'],
+        #                     capture_output = True, text = True, check = True)
+        #rettxt = ret.stdout
+        #ll = rettxt.splitlines()
+        #i = 1
+        #if not ll[i].startswith('Total Project Quota:'):
+        #    raise Exception('Found unexpected line in output from shell_quota, %s.' % (ll[i]))
+        #w = ll[i].split()
+        #groups[grp]['shell_quota'] = utils.getSizeFromString(w[3], w[4])
+        #i += 1
+        #if not ll[i].startswith('Total Project Usage:'):
+        #    raise Exception('Found unexpected line in output from shell_quota, %s.' % (ll[i]))
+        #w = ll[i].split()
+        #groups[grp]['shell_usage'] = utils.getSizeFromString(w[3], w[4])
+        #while i < len(ll):
+        #    if not ll[i].startswith('user/'):
+        #        i += 1
+        #        continue
+        #    w = ll[i].split()
+        #    usr = w[0][5:]
+        #    if not usr in groups[grp]['users']:
+        #        raise Exception('Could not find user "%s" from shell_quota output in group "%s".' % (usr, grp))
+        #    groups[grp]['users'][usr]['shell_usage'] = utils.getSizeFromString(w[4], w[5])
+        #    i += 1
+        
     if verbose:
         utils.printLine()
         print('Group data')
@@ -317,17 +347,31 @@ def printGroupData(groups):
         w_tot += groups[grp]['weight']
         
     for grp in groups.keys():
-        print('%-20s   weight   scratch' % (grp))
+        print('%-20s   weight   SU           scratch      shell' % (grp))
         for usr in sorted(list(groups[grp]['users'].keys())):
-            print('    %-12s %-3s   %.2f     %8.2e     %8.2e' % (usr, 
-                        groups[grp]['users'][usr]['people_type'], groups[grp]['users'][usr]['weight'], 
-                        groups[grp]['users'][usr]['su_usage'], groups[grp]['users'][usr]['scratch_usage']))
-        print('    -------------------------------------')
-        print('    TOTAL              %.2f     %8.2e     %8.2e' % (groups[grp]['weight'], groups[grp]['su_usage'], groups[grp]['scratch_usage']))
-        print('    AVAILABLE         %5.2f     %8.2e     %8.2e' % (w_tot, groups[grp]['su_quota'], groups[grp]['scratch_quota']))
-        print('    FRACTION          %4.1f%%       %5.2f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 
-                        100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
-                        100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
+            print('    %-12s %-3s   %.2f     %8.2e     %8.2e     %8.2e' \
+                  % (usr, 
+                     groups[grp]['users'][usr]['people_type'],
+                     groups[grp]['users'][usr]['weight'], 
+                     groups[grp]['users'][usr]['su_usage'],
+                     groups[grp]['users'][usr]['scratch_usage'],
+                     groups[grp]['users'][usr]['shell_usage']))
+        print('    --------------------------------------------------------------')
+        print('    TOTAL              %.2f     %8.2e     %8.2e     %8.2e' \
+              % (groups[grp]['weight'],
+                 groups[grp]['su_usage'],
+                 groups[grp]['scratch_usage'],
+                 groups[grp]['shell_usage']))
+        print('    AVAILABLE         %5.2f     %8.2e     %8.2e     %8.2e' \
+              % (w_tot,
+                 groups[grp]['su_quota'],
+                 groups[grp]['scratch_quota'],
+                 groups[grp]['shell_quota']))
+        print('    FRACTION          %4.1f%%       %5.2f%%       %5.2f%%       %5.2f%%' \
+              % (100.0 * groups[grp]['weight'] / w_tot, 
+                 100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
+                 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'],
+                 100.0 * groups[grp]['shell_usage'] / groups[grp]['shell_quota']))
         print()
     
     return
