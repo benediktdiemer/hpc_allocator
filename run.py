@@ -10,57 +10,161 @@ import sys
 import argparse
 import subprocess
 import copy
-from datetime import date 
+import pickle
+import os
 
 import config as cfg
+import utils
 
 ###################################################################################################
 
-# Quarter counter starts in 2025/4; this is hard-coded and cannot be changed later
-first_quarter_year = 2025
-first_quarter_idx = 4
+# The pickle protocol should be fixed to make it exchangeable between machines
+pickle_protocol = 5
+pickle_dir = 'pickles/'
 
 ###################################################################################################
 
 def main():
     
     if len(sys.argv) == 1:
-        main_local()
+        
+        checkStatus()
+    
     else:
-        main_script()
+    
+        parser = argparse.ArgumentParser(description = 'Welcome to the HPC allocator.')
+    
+        helpstr = 'The operation to execute'
+        parser.add_argument('op_type', type = str, help = helpstr)
+    
+        args = parser.parse_args()
+        
+        if args.op_type == 'config':
+            
+            printConfig()
+            
+        elif args.op_type == 'check':
+            
+            checkStatus()
+            
+        else:
+            raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.op_type))
+        
     
     return
 
 ###################################################################################################
 
-def main_local():
+# This function should be executed regularly. It:
+# 
+# - Load the base config (last quarter/period, group allocations for this quarter)
+# - Compute the current quarter, period, and day from the date
+# - If date differs from previous, re-load current group data (members and usage)
+# - Check whether a new quarter has started by comparing to the last known quarter. If so:
+#   - Compute new allocation weights for each group and save them to the config
+#   - Send out email with new allocation details to group leads
+# - Check whether a new period has started by comparing to the last known period, or if a new
+#   quarter has started. If so:
+#   - Compute allocations (SUs) for this period
+#   - Send out allocations for this period to all group members
+# - If not new quarter / period, check for usage close to allocation
+#
+# If dry_run == True, the function runs but does not set the config to the new dates and saves emails
+# for review instead of sending them.
+
+def checkStatus(force_load = False, dry_run = True, verbose = False):
+
+    utils.printLine()
+    print('HPC Allocator: Checking status')
+    utils.printLine()
     
-    #printConfig(verbose = True)
-    checkUsage()
-    
-    return
-
-###################################################################################################
-
-def main_script():
-
-    parser = argparse.ArgumentParser(description = 'Welcome to the HPC allocator.')
-
-    helpstr = 'The operation to execute'
-    parser.add_argument('op_type', type = str, help = helpstr)
-
-    args = parser.parse_args()
-    
-    if args.op_type == 'config':
-        
-        printConfig()
-        
-    elif args.op_type == 'check':
-        
-        checkUsage()
-        
+    # Load config (dates)
+    pickle_file_cfg = '%s/current_config.pkl' % (pickle_dir)
+    if os.path.exists(pickle_file_cfg):
+        pFile = open(pickle_file_cfg, 'rb')
+        dic = pickle.load(pFile)
+        pFile.close()
+        prev_q_all = dic['prev_q_all']
+        prev_p = dic['prev_p']
+        prev_d = dic['prev_d']
     else:
-        raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.op_type))
+        prev_q_all = -1
+        prev_p = -1
+        prev_d = -1
+        print('WARNING: found no previous config. Re-setting variables.')
+        
+    # Compute date, quarter, period; check for changes
+    yr, q_yr, q_all, p, d = utils.getTimes()
+    new_quarter = (prev_q_all != q_all)
+    new_period = (prev_p != p)
+    new_day = (prev_d != d)
+    print('Quarter = %d (prev. %d), period = %d (prev. %d), day = %d (prev. %d).' \
+          % (q_all, prev_q_all, p, prev_p, d, prev_d))
+
+    # Check if we need new to update group/user data
+    pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
+    must_update_grp_cur = False
+    if new_quarter or new_day or force_load:
+        print('Updating current group data...')
+        must_update_grp_cur = True
+    else:
+        if not os.path.exists(pickle_file_grps_cur):
+            print('WARNING: could not find file with current group data. Creating from scratch...')
+            must_update_grp_cur = True
+        else:
+            print('Current group data already up to date, loading from file...')
+            pFile = open(pickle_file_grps_cur, 'rb')
+            dic = pickle.load(pFile)
+            pFile.close()
+            grps_cur = dic['grps_cur']
+    if must_update_grp_cur:
+        grps_cur = collectGroupData(verbose = verbose)
+        print('Saving current group data to file...')
+        dic = {}
+        dic['grps_cur'] = grps_cur
+        output_file = open(pickle_file_cfg, 'wb')
+        pickle.dump(dic, output_file, pickle_protocol)
+        output_file.close()
+
+    # Load or update the group data to be used for computing quarterly allocations
+    pickle_file_grps_q = '%s/groups_quarter_%02d_%04d_%d.pkl' % (pickle_dir, q_all, yr, q_yr)
+    must_update_grp_q = False
+    if new_quarter:
+        print('Updating quarter group data...')
+        must_update_grp_q = True
+    else:
+        if os.path.exists(pickle_file_grps_q):
+            print('Quarter group data already up to date, loading from file...')
+            pFile = open(pickle_file_grps_cur, 'rb')
+            dic = pickle.load(pFile)
+            pFile.close()
+            grps_q = dic['grps_q']
+        else:
+            print('WARNING: Could not find file with quarter group data, using current...')
+            must_update_grp_q = True
+    if must_update_grp_q:
+        print('Saving quarter group data to file...')
+        grps_q = copy.copy(grps_cur)    
+        dic = {}
+        dic['grps_q'] = grps_q
+        output_file = open(pickle_file_cfg, 'wb')
+        pickle.dump(dic, output_file, pickle_protocol)
+        output_file.close()
+
+    # Check for a new quarter and if it has changed, send out allocation details
+    
+    # Check for a new period
+    
+    # Write config (after function has successfully run)
+    if not dry_run:
+        print('Updating config pickle...')
+        dic = {}
+        dic['prev_q_all'] = q_all
+        dic['prev_p'] = p
+        dic['prev_d'] = d
+        output_file = open(pickle_file_cfg, 'wb')
+        pickle.dump(dic, output_file, pickle_protocol)
+        output_file.close()
     
     return
 
@@ -93,9 +197,9 @@ def collectUserData(verbose = False):
     users.update(cfg.users_extra)
     
     if verbose:
-        printLine()
+        utils.printLine()
         print('User data')
-        printLine()
+        utils.printLine()
         usrs = sorted(list(users.keys()))
         for i in range(len(usrs)):
             usr = usrs[i]
@@ -130,8 +234,8 @@ def collectGroupData(verbose = False):
         w = ll[i].split()
         if w[0] != 'zt-%s' % (grp):
             raise Exception('Expected "zt-%s" in third line of output.' % (grp))
-        groups[grp]['scratch_quota'] = getSizeFromString(w[3], w[4])
-        groups[grp]['scratch_usage'] = getSizeFromString(w[1], w[2])
+        groups[grp]['scratch_quota'] = utils.getSizeFromString(w[3], w[4])
+        groups[grp]['scratch_usage'] = utils.getSizeFromString(w[1], w[2])
 
         i += 1
         if ll[i].strip() != '# User quotas':
@@ -143,7 +247,7 @@ def collectGroupData(verbose = False):
             w = ll[i].split()
             usr = w[0]
             groups[grp]['users'][usr] = {}
-            groups[grp]['users'][usr]['scratch_usage'] = getSizeFromString(w[1], w[2])
+            groups[grp]['users'][usr]['scratch_usage'] = utils.getSizeFromString(w[1], w[2])
             if usr in users:
                 ptype = users[usr]['people_type']
             else:
@@ -161,9 +265,9 @@ def collectGroupData(verbose = False):
         w_tot += w_grp
 
     if verbose:
-        printLine()
+        utils.printLine()
         print('Group data')
-        printLine()
+        utils.printLine()
         for grp in groups.keys():
             print('%-20s   weight   scratch' % (grp))
             for usr in sorted(list(groups[grp]['users'].keys())):
@@ -173,89 +277,9 @@ def collectGroupData(verbose = False):
             print('    AVAILABLE         %5.2f     %8.2e' % (w_tot, groups[grp]['scratch_quota']))
             print('    FRACTION          %4.1f%%       %5.2f%%' % (100.0 * groups[grp]['weight'] / w_tot, 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
             print()
-        printLine()
+        utils.printLine()
                       
     return groups
-
-###################################################################################################
-
-# Outputs are like "5.02 TB" and such, which needs to be parsed to a number in GB.
-
-def getSizeFromString(num_str, unit_str):
-
-    num = float(num_str)
-    if unit_str.upper() == 'B':
-        fac = 1024.0**-3
-    elif unit_str.upper() == 'KB':
-        fac = 1024.0**-2
-    elif unit_str.upper() == 'MB':
-        fac = 1024.0**-1
-    elif unit_str.upper() == 'GB':
-        fac = 1.0
-    elif unit_str.upper() == 'TB':
-        fac = 1024.0
-    else:
-        raise Exception('Unknown file size unit, "%s".' % (unit_str))
-    sze = num * fac
-    
-    return sze
-
-###################################################################################################
-
-def printLine():
-
-    print('--------------------------------------------------------------------------------')
-
-    return
-
-###################################################################################################
-
-def getTimes():
-
-    # Get current year and month    
-    date_today = date.today()
-    yr = date_today.year
-    mth = date_today.month
-    
-    # Determine quarter 
-    if mth >= 10:
-        q = 4
-    elif mth >= 7:
-        q = 3
-    elif mth >= 4:
-        q = 2
-    else:
-        q = 1
-    q_start = date.fromisoformat('%4d-%02d-01' % (yr, ((q - 1) * 3 + 1)))
-    q = (yr - first_quarter_year) * 4 + (q - first_quarter_idx)
-
-    # Determine days since beginning of quarter
-    delta = date_today - q_start
-    d = delta.days
-    
-    # Determine period from days
-    p = len(cfg.periods) - 1
-    while cfg.periods[p]['start_day'] > d:
-        p -= 1
-    
-    return q, p, d
-
-###################################################################################################
-
-# This function should be executed regularly. It:
-# 
-# - Compute the current quarter and period index from the date
-# - Checks whether a new quarter or period has started by comparing to the last known quarter and
-#   period numbers. If so,
-#   - Compute the base config for this quarter
-#   - Send out an allocation email
-
-def checkUsage(send_emails = False):
-    
-    q, p, d = getTimes()
-    print(q, p, d)
-    
-    return
 
 ###################################################################################################
 # Trigger
