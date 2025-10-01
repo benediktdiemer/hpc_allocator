@@ -28,7 +28,7 @@ def main():
     
     if len(sys.argv) == 1:
         
-        checkStatus(dry_run = True, verbose = True)
+        checkStatus(dry_run = True, verbose = True, test_mode = True)
     
     else:
     
@@ -72,7 +72,7 @@ def main():
 # If dry_run == True, the function runs but does not set the config to the new dates and saves emails
 # for review instead of sending them.
 
-def checkStatus(force_load = False, dry_run = True, verbose = False):
+def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose = False):
 
     utils.printLine()
     print('HPC Allocator: Checking status')
@@ -107,6 +107,14 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
     if new_quarter or new_day or force_load:
         print('Updating current group data...')
         must_update_grp_cur = True
+        
+        if test_mode:
+            must_update_grp_cur = False
+            pFile = open(pickle_file_grps_cur, 'rb')
+            dic = pickle.load(pFile)
+            pFile.close()
+            grps_cur = dic['grps_cur']
+            
     else:
         if not os.path.exists(pickle_file_grps_cur):
             print('WARNING: could not find file with current group data. Creating from scratch...')
@@ -165,6 +173,9 @@ def checkStatus(force_load = False, dry_run = True, verbose = False):
         utils.printLine()
 
     # Check for a new quarter and if it has changed, send out allocation details
+    
+    # - store allocation in grps_q
+    # - email
     
     # Check for a new period
     
@@ -304,6 +315,7 @@ def collectGroupData(verbose = False):
         # Analyze shell_quota
         groups[grp]['shell_quota'] = 1.0
         groups[grp]['shell_usage'] = 0.5
+        
         #ret = subprocess.run(['shell_quota', '--proj', grp, '--show-vol'],
         #                     capture_output = True, text = True, check = True)
         #rettxt = ret.stdout
