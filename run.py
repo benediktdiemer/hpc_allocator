@@ -114,7 +114,8 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
         print('Updating current group data...')
         must_update_grp_cur = True
         
-        if test_mode:
+        # TODO
+        if test_mode and os.path.exists(pickle_file_grps_cur):
             must_update_grp_cur = False
             pFile = open(pickle_file_grps_cur, 'rb')
             dic = pickle.load(pFile)
