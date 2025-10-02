@@ -78,6 +78,9 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
     print('HPC Allocator: Checking status')
     utils.printLine()
     
+    # ---------------------------------------------------------------------------------------------
+    # Date config
+    
     # Load config (dates)
     pickle_file_cfg = '%s/current_config.pkl' % (pickle_dir)
     if os.path.exists(pickle_file_cfg):
@@ -101,6 +104,9 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
     print('Quarter = %d (prev. %d), period = %d (prev. %d), day = %d (prev. %d).' \
           % (q_all, prev_q_all, p, prev_p, d, prev_d))
 
+    # ---------------------------------------------------------------------------------------------
+    # Group data
+
     # Check if we need new to update group/user data
     pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
     must_update_grp_cur = False
@@ -114,7 +120,7 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
             dic = pickle.load(pFile)
             pFile.close()
             grps_cur = dic['grps_cur']
-            
+ 
     else:
         if not os.path.exists(pickle_file_grps_cur):
             print('WARNING: could not find file with current group data. Creating from scratch...')
@@ -141,28 +147,41 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
             printGroupData(grps_cur)
             utils.printLine()
 
+    # ---------------------------------------------------------------------------------------------
+    # Quarter config
+
     # Load or update the group data to be used for computing quarterly allocations
-    pickle_file_grps_q = '%s/groups_quarter_%02d_%04d_%d.pkl' % (pickle_dir, q_all, yr, q_yr)
+    pickle_file_quarter = '%s/quarter_%02d_%04d_%d.pkl' % (pickle_dir, q_all, yr, q_yr)
     must_update_grp_q = False
     if new_quarter:
-        print('Updating quarter group data...')
+        print('Updating quarter data...')
         must_update_grp_q = True
     else:
-        if os.path.exists(pickle_file_grps_q):
-            print('Quarter group data already up to date, loading from file...')
-            pFile = open(pickle_file_grps_q, 'rb')
+        if os.path.exists(pickle_file_quarter):
+            print('Quarter data already up to date, loading from file...')
+            pFile = open(pickle_file_quarter, 'rb')
             dic = pickle.load(pFile)
             pFile.close()
             grps_q = dic['grps_q']
+            q_su_quota_astr = dic['q_su_quota_astr']
         else:
             print('WARNING: Could not find file with quarter group data, using current...')
             must_update_grp_q = True
     if must_update_grp_q:
+        print('Determining quarter data...')
+        ret = subprocess.run(['sbalance', '-account', 'astr'], 
+                             capture_output = True, text = True, check = True)
+        rettxt = ret.stdout
+        ll = rettxt.splitlines()
+        w = ll[1].split()
+        q_su_quota_astr = float(w[1]) * 1000.0
+        print('Found overall quarter allocation of %.1f kSU.' % (q_su_quota_astr / 1000.0))
+        grps_q = copy.copy(grps_cur)
         print('Saving quarter group data to file...')
-        grps_q = copy.copy(grps_cur)    
         dic = {}
         dic['grps_q'] = grps_q
-        output_file = open(pickle_file_grps_q, 'wb')
+        dic['q_su_quota_astr'] = q_su_quota_astr
+        output_file = open(pickle_file_quarter, 'wb')
         pickle.dump(dic, output_file, pickle_protocol)
         output_file.close()
     
@@ -172,13 +191,27 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
         printGroupData(grps_cur)
         utils.printLine()
 
+    # ---------------------------------------------------------------------------------------------
+    # Quarter and period changes
+
     # Check for a new quarter and if it has changed, send out allocation details
+    
     
     # - store allocation in grps_q
     # - email
-    
+
     # Check for a new period
     
+    # - add period to pickle
+    # - compute group allocations
+    # - send email to all users (oversubscription warning)
+
+    # ---------------------------------------------------------------------------------------------
+    # Usage warnings
+
+    # ---------------------------------------------------------------------------------------------
+    # Store status
+
     # Write config (after function has successfully run)
     if not dry_run:
         print('Updating config pickle...')
