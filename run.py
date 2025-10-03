@@ -15,6 +15,7 @@ import os
 
 import config as cfg
 import utils
+import email
 
 ###################################################################################################
 
@@ -52,15 +53,15 @@ def main():
         if args.mode == 'test':
             test_mode = True
             dry_run = True
-        
         elif args.mode == 'dry':
             dry_run = True
-            
         elif args.mode == 'action':
             dry_run = False
         
         if args.op_type == 'check':
             checkStatus()
+        elif args.op_type == 'emailtest':
+            email.sendMessage()
         else:
             raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.op_type))
         
@@ -223,7 +224,10 @@ def checkStatus(verbose = False):
             # misses any usage between the last run of the script and this run, but that is 
             # inevitable; this info is simply lost.
             if new_quarter:
-                grp_su_usage_cum = grps_prev[grp]['su_usage']
+                if grp in grps_prev:
+                    grp_su_usage_cum = grps_prev[grp]['su_usage']
+                else:
+                    grp_su_usage_cum = 0.0
             else:
                 grp_su_usage_cum = grps_cur[grp]['su_usage']
             if grp in prd_old['groups']:
@@ -495,12 +499,6 @@ def printGroupData(groups):
                  100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
                  100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
         print()
-    
-    return
-
-###################################################################################################
-
-def sendMessage():
     
     return
 
