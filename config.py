@@ -10,6 +10,14 @@ from collections import OrderedDict
 
 ###################################################################################################
 
+# The pickle protocol should be fixed to make it exchangeable between machines
+pickle_protocol = 5
+pickle_dir = 'pickles/'
+pickle_file_cfg = '%s/current_config.pkl' % (pickle_dir)
+pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
+
+###################################################################################################
+
 # Set possible categories of HPC users and their allocation weights
 
 people_types = {}
@@ -75,9 +83,11 @@ groups['qye-prj']      = {'lead': 'qye'}
 # oversubscription factor.
 
 periods = OrderedDict()
-periods[0] = {'start_day': 0,  'alloc_frac':  0.7}
-periods[1] = {'start_day': 45, 'alloc_frac':  1.0}
-periods[2] = {'start_day': 70, 'alloc_frac':  3.0}
-periods[3] = {'start_day': 83, 'alloc_frac': 10.0}
+periods[0] = {'start_day': 0,  'alloc_frac': 0.5}
+periods[1] = {'start_day': 30, 'alloc_frac': 0.9}
+periods[2] = {'start_day': 60, 'alloc_frac': 2.0}
+periods[3] = {'start_day': 80, 'alloc_frac': None}
+
+n_periods = len(periods)
 
 ###################################################################################################

@@ -80,3 +80,21 @@ def getTimes():
     return yr, q_yr, q_all, p, d
 
 ###################################################################################################
+
+def getPickleNameQuarter(q_all, yr, q_yr, previous = False):
+
+    if previous:
+       
+        if q_yr == 0:
+            yr_use = yr - 1
+            q_yr_use = 4
+        else:
+            yr_use = yr
+            q_yr_use = q_yr - 1
+        pickle_file_quarter = '%s/quarter_%02d_%04d_%d.pkl' % (cfg.pickle_dir, q_all - 1, yr_use, q_yr_use)
+    else:
+        pickle_file_quarter = '%s/quarter_%02d_%04d_%d.pkl' % (cfg.pickle_dir, q_all, yr, q_yr)
+    
+    return pickle_file_quarter
+
+###################################################################################################

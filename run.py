@@ -18,17 +18,26 @@ import utils
 
 ###################################################################################################
 
-# The pickle protocol should be fixed to make it exchangeable between machines
-pickle_protocol = 5
-pickle_dir = 'pickles/'
+# In test mode, the code can be executed on a machine other than an HPC cluster. The command-line
+# queries are replaced by previously loaded data.
+global test_mode 
+test_mode = False
+
+# If dry_run == True, the function runs but does not set the config to the new dates and saves 
+# emails for review instead of sending them.
+global dry_run
+dry_run = True
 
 ###################################################################################################
 
 def main():
     
+    global test_mode
+    global dry_run
+    
     if len(sys.argv) == 1:
         
-        checkStatus(dry_run = True, verbose = True, test_mode = True)
+        checkStatus(verbose = True)
     
     else:
     
@@ -36,21 +45,25 @@ def main():
     
         helpstr = 'The operation to execute'
         parser.add_argument('op_type', type = str, help = helpstr)
+        parser.add_argument('mode', type = str, help = helpstr)
     
         args = parser.parse_args()
+
+        if args.mode == 'test':
+            test_mode = True
+            dry_run = True
         
-        if args.op_type == 'config':
+        elif args.mode == 'dry':
+            dry_run = True
             
-            printConfig()
-            
-        elif args.op_type == 'check':
-            
+        elif args.mode == 'action':
+            dry_run = False
+        
+        if args.op_type == 'check':
             checkStatus()
-            
         else:
             raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.op_type))
         
-    
     return
 
 ###################################################################################################
@@ -68,150 +81,226 @@ def main():
 #   - Compute allocations (SUs) for this period
 #   - Send out allocations for this period to all group members
 # - If not new quarter / period, check for usage close to allocation
-#
-# If dry_run == True, the function runs but does not set the config to the new dates and saves emails
-# for review instead of sending them.
 
-def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose = False):
+def checkStatus(verbose = False):
 
     utils.printLine()
     print('HPC Allocator: Checking status')
     utils.printLine()
-    
+    print('Settings: test_mode = %s, dry_run = %s.' % (str(test_mode), str(dry_run)))
+
     # ---------------------------------------------------------------------------------------------
-    # Date config
+    # Date config: Compute date, quarter, period; check for changes
     
-    # Load config (dates)
-    pickle_file_cfg = '%s/current_config.pkl' % (pickle_dir)
-    if os.path.exists(pickle_file_cfg):
-        pFile = open(pickle_file_cfg, 'rb')
-        dic = pickle.load(pFile)
+    print('Setting overall config...')
+    if os.path.exists(cfg.pickle_file_cfg):
+        pFile = open(cfg.pickle_file_cfg, 'rb')
+        dic_cfg = pickle.load(pFile)
         pFile.close()
-        prev_q_all = dic['prev_q_all']
-        prev_p = dic['prev_p']
-        prev_d = dic['prev_d']
+        prev_q_all = dic_cfg['prev_q_all']
+        prev_p = dic_cfg['prev_p']
+        prev_d = dic_cfg['prev_d']
     else:
         prev_q_all = -1
         prev_p = -1
         prev_d = -1
-        print('WARNING: found no previous config. Re-setting variables.')
+        print('    WARNING: found no previous config. Re-setting variables.')
         
-    # Compute date, quarter, period; check for changes
     yr, q_yr, q_all, p, d = utils.getTimes()
     new_quarter = (prev_q_all != q_all)
     new_period = (prev_p != p)
     new_day = (prev_d != d)
-    print('Quarter = %d (prev. %d), period = %d (prev. %d), day = %d (prev. %d).' \
+    print('    Quarter = %d (prev. %d), period = %d (prev. %d), day = %d (prev. %d).' \
           % (q_all, prev_q_all, p, prev_p, d, prev_d))
-
+    
     # ---------------------------------------------------------------------------------------------
     # Group data
 
-    # Check if we need new to update group/user data
-    pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
-    must_update_grp_cur = False
-    if new_quarter or new_day or force_load:
-        print('Updating current group data...')
-        must_update_grp_cur = True
-        
-        # TODO
-        if test_mode and os.path.exists(pickle_file_grps_cur):
-            must_update_grp_cur = False
-            pFile = open(pickle_file_grps_cur, 'rb')
-            dic = pickle.load(pFile)
+    print('Setting group data...')
+    grp_file_found = os.path.exists(cfg.pickle_file_grps_cur)
+
+    if (new_period or new_day or (not grp_file_found)):
+        if grp_file_found:
+            print('    Updating current group data...')
+            pFile = open(cfg.pickle_file_grps_cur, 'rb')
+            dic_grps_prev = pickle.load(pFile)
             pFile.close()
-            grps_cur = dic['grps_cur']
- 
-    else:
-        if not os.path.exists(pickle_file_grps_cur):
-            print('WARNING: could not find file with current group data. Creating from scratch...')
-            must_update_grp_cur = True
+            grps_prev = dic_grps_prev['grps_cur']               
         else:
-            print('Current group data already up to date, loading from file...')
-            pFile = open(pickle_file_grps_cur, 'rb')
-            dic = pickle.load(pFile)
-            pFile.close()
-            grps_cur = dic['grps_cur']
-    if must_update_grp_cur:
-        grps_cur = collectGroupData(verbose = verbose)
-        print('Saving current group data to file...')
-        dic = {}
-        dic['grps_cur'] = grps_cur
-        output_file = open(pickle_file_grps_cur, 'wb')
-        pickle.dump(dic, output_file, pickle_protocol)
+            print('    WARNING: could not find file with current group data. Will create from scratch.')
+            grps_prev = {}
+        
+        grps_cur = collectGroupData(verbose = False)
+        print('    Saving current group data to file...')
+        dic_grps = {}
+        dic_grps['grps_cur'] = grps_cur
+        output_file = open(cfg.pickle_file_grps_cur, 'wb')
+        pickle.dump(dic_grps, output_file, cfg.pickle_protocol)
         output_file.close()
-    
         if verbose:
             utils.printLine()
-            print('Current group data')
+            print('    Current group data')
             utils.printLine()
             printGroupData(grps_cur)
             utils.printLine()
-
-    # ---------------------------------------------------------------------------------------------
-    # Quarter config
-
-    # Load or update the group data to be used for computing quarterly allocations
-    pickle_file_quarter = '%s/quarter_%02d_%04d_%d.pkl' % (pickle_dir, q_all, yr, q_yr)
-    must_update_grp_q = False
-    if new_quarter:
-        print('Updating quarter data...')
-        must_update_grp_q = True
     else:
-        if os.path.exists(pickle_file_quarter):
-            print('Quarter data already up to date, loading from file...')
-            pFile = open(pickle_file_quarter, 'rb')
-            dic = pickle.load(pFile)
+        print('    Current group data already up to date, loading from file...')
+        pFile = open(cfg.pickle_file_grps_cur, 'rb')
+        dic_grps = pickle.load(pFile)
+        pFile.close()
+        grps_cur = dic_grps['grps_cur']
+
+    # ---------------------------------------------------------------------------------------------
+    # Quarter data
+
+    print('Setting quarter data...')
+    pickle_file_quarter = utils.getPickleNameQuarter(q_all, yr, q_yr)
+    found_pickle_q = os.path.exists(pickle_file_quarter)
+    
+    if new_quarter or not found_pickle_q:
+        
+        if (not new_quarter) and (not found_pickle_q):
+            print('    WARNING: could not find file with quarter data. Will create from scratch.')
+        
+        q_su_quota_astr, q_su_avail_astr = collectAllocation()
+        print('    Found overall quarter allocation of %.1f kSU, %.1f kSU remaining.' \
+              % (q_su_quota_astr / 1000.0, q_su_avail_astr / 1000.0))
+        
+        dic_q = {}
+        dic_q['q_su_quota_astr'] = q_su_quota_astr
+        dic_q['q_su_avail_astr'] = q_su_avail_astr
+        prds = {}
+        dic_q['periods'] = prds
+        
+        # Load previous file
+        pickle_file_quarter_prev = utils.getPickleNameQuarter(q_all, yr, q_yr, previous = True)
+        found_pickle_q_prev = os.path.exists(pickle_file_quarter_prev)
+        if found_pickle_q_prev:
+            pFile = open(pickle_file_quarter_prev, 'rb')
+            dic_q_prev = pickle.load(pFile)
             pFile.close()
-            grps_q = dic['grps_q']
-            q_su_quota_astr = dic['q_su_quota_astr']
         else:
-            print('WARNING: Could not find file with quarter group data, using current...')
-            must_update_grp_q = True
-    if must_update_grp_q:
-        print('Determining quarter data...')
-        ret = subprocess.run(['sbalance', '-account', 'astr'], 
-                             capture_output = True, text = True, check = True)
-        rettxt = ret.stdout
-        ll = rettxt.splitlines()
-        w = ll[1].split()
-        q_su_quota_astr = float(w[1]) * 1000.0
-        print('Found overall quarter allocation of %.1f kSU.' % (q_su_quota_astr / 1000.0))
-        grps_q = copy.copy(grps_cur)
-        print('Saving quarter group data to file...')
-        dic = {}
-        dic['grps_q'] = grps_q
-        dic['q_su_quota_astr'] = q_su_quota_astr
-        output_file = open(pickle_file_quarter, 'wb')
-        pickle.dump(dic, output_file, pickle_protocol)
-        output_file.close()
-    
-        utils.printLine()
-        print('Quarter group data')
-        utils.printLine()
-        printGroupData(grps_cur)
-        utils.printLine()
+            print('    WARNING: Could not find data from previous quarter. Will assume this is first quarter.')
+            dic_q_prev = None  
 
     # ---------------------------------------------------------------------------------------------
-    # Quarter and period changes
+    # Period changes
+    
+    if new_period:
 
-    # Check for a new quarter and if it has changed, send out allocation details
-    
-    
-    # - store allocation in grps_q
-    # - email
+        # Create new period dataset
+        print('Starting new period...')
+        prds[p] = {}
+        prds[p]['groups'] = {}
+        
+        # Set shortcuts for new and previous period
+        prd_new = prds[p]
+        if p > 0:
+            prd_old = prds[p - 1]
+        else:
+            if dic_q_prev is not None:
+                prd_old = dic_q_prev['periods'][cfg.n_periods - 1]
+            else:
+                prd_old = {}
+                prd_old['groups'] = {}
+        
+        # Compute total weight
+        w_tot = 0.0
+        for grp in grps_cur:
+            prd_new['groups'][grp] = {}
+            prd_new['groups'][grp]['weight'] = grps_cur[grp]['weight']
+            w_tot += grps_cur[grp]['weight']
+        
+        # Go through groups to assign allocations and notify
+        for grp in grps_cur:
+            
+            # Compute weight
+            w_frac = prd_new['groups'][grp]['weight'] / w_tot
+            prd_new['groups'][grp]['weight_frac'] = w_frac
 
-    # Check for a new period
-    
-    # - add period to pickle
-    # - compute group allocations
-    # - send email to all users (oversubscription warning)
+            # Compute cumulative usage in the previous period. If this is a new quarter, the usage 
+            # has been reset to zero and we need to use the previous group data. This technically 
+            # misses any usage between the last run of the script and this run, but that is 
+            # inevitable; this info is simply lost.
+            if new_quarter:
+                grp_su_usage_cum = grps_prev[grp]['su_usage']
+            else:
+                grp_su_usage_cum = grps_cur[grp]['su_usage']
+            if grp in prd_old['groups']:
+                prd_old['groups'][grp]['su_usage'] = grp_su_usage_cum - prd_old['groups'][grp]['su_usage_start']
+            
+            # In new period, set cumulative usage to total from current group data or zero if it
+            # is the first period.
+            if new_quarter:
+                prd_new['groups'][grp]['su_usage_start'] = 0.0
+            else:
+                prd_new['groups'][grp]['su_usage_start'] = grp_su_usage_cum
+            prd_new['groups'][grp]['su_usage'] = 0.0
+            
+            # Try to find previous penalty if any
+            if grp in prd_old['groups']:
+                penalty_old = prd_old['groups'][grp]['penalty_new']
+            else:
+                penalty_old = 0.0
+                
+            # Distinguish the last period in each quarter
+            if p < cfg.n_periods - 1:
+                alloc_grp = q_su_avail_astr * w_frac * cfg.periods[p]['alloc_frac']
+                if penalty_old <= alloc_grp:
+                    alloc_grp_final = alloc_grp - penalty_old
+                    penalty_new = 0.0
+                else:
+                    alloc_grp_final = 0.0
+                    penalty_new = penalty_old - alloc_grp
+                print('    Group %-15s fractional weight %.4f, allocation %6.1f kSU, penalty %6.1f kSU, final %6.1f kSU.' \
+                      % (grp, w_frac, alloc_grp / 1000.0, penalty_old / 1000.0, alloc_grp_final / 1000.0))
+            else:
+                alloc_grp_final = q_su_avail_astr
+                penalty_new = penalty_old
+                print('    Assigned full remaining allocation to all groups.')
+
+            # Store new data
+            prd_new['groups'][grp]['alloc'] = alloc_grp_final
+            prd_new['groups'][grp]['penalty_old'] = penalty_old
+            prd_new['groups'][grp]['penalty_new'] = penalty_new
+
+            # Write changes to previous period to file
+            if (p == 0) and (dic_q_prev is not None):
+                output_file = open(pickle_file_quarter_prev, 'wb')
+                pickle.dump(dic_q_prev, output_file, cfg.pickle_protocol)
+                output_file.close()
+
+            # Send out email with allocation details, oversubscription warning
+            # usage in previous period, penalties if applicable
+            
+            # TODO
 
     # ---------------------------------------------------------------------------------------------
-    # Usage warnings
+    # If there is no new period: Usage warnings
+
+    else:
+        
+        prd_cur = prds[p]
+        for grp in grps_cur:
+            
+            # The group could have been added after the period was created.
+            if not grp in prd_cur['groups']:
+                print('WARNING: Could not find group "%s" in current period.' % (grp))
+                continue
+        
+            # Update SU usage from cumulative
+            prd_cur['groups'][grp]['su_usage'] = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
+            
+            # Check for close-to-limit
+            # TODO
 
     # ---------------------------------------------------------------------------------------------
-    # Store status
+    # Store changes to current quarter/period data and status
+
+    # Write quarter file
+    output_file = open(pickle_file_quarter, 'wb')
+    pickle.dump(dic_q, output_file, cfg.pickle_protocol)
+    output_file.close()
 
     # Write config (after function has successfully run)
     if not dry_run:
@@ -220,20 +309,33 @@ def checkStatus(force_load = False, dry_run = True, test_mode = False, verbose =
         dic['prev_q_all'] = q_all
         dic['prev_p'] = p
         dic['prev_d'] = d
-        output_file = open(pickle_file_cfg, 'wb')
-        pickle.dump(dic, output_file, pickle_protocol)
+        output_file = open(cfg.pickle_file_cfg, 'wb')
+        pickle.dump(dic, output_file, cfg.pickle_protocol)
         output_file.close()
     
     return
-
+        
 ###################################################################################################
 
-def printConfig(verbose = False):
-    
-    collectGroupData(verbose = verbose)
-    
-    return
+# Check the allocation for astronomy for the quarter
 
+def collectAllocation():
+
+    if test_mode:
+        alloc_guess = 8333.2 * 1000.0
+        return alloc_guess, alloc_guess * 0.5
+
+    ret = subprocess.run(['sbalance', '-account', 'astr'], 
+                         capture_output = True, text = True, check = True)
+    rettxt = ret.stdout
+    ll = rettxt.splitlines()
+    w = ll[1].split()
+    q_su_quota_astr = float(w[1]) * 1000.0
+    w = ll[2].split()
+    q_su_avail_astr = float(w[1]) * 1000.0
+    
+    return q_su_quota_astr, q_su_avail_astr
+        
 ###################################################################################################
 
 # Collect user data from a) email exploders and b) the users_extra dictionary in config, which can
@@ -273,6 +375,14 @@ def collectUserData(verbose = False):
 ###################################################################################################
 
 def collectGroupData(verbose = False):
+    
+    # In test mode, we just load a previously determined set of group data
+    if test_mode:
+        pFile = open(cfg.pickle_file_grps_cur, 'rb')
+        dic_grps = pickle.load(pFile)
+        pFile.close()
+        grps_cur = dic_grps['grps_cur']
+        return grps_cur
     
     # Get user data
     users = collectUserData(verbose = False)
@@ -316,7 +426,6 @@ def collectGroupData(verbose = False):
             else:
                 groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
             groups[grp]['users'][usr]['su_usage'] = 0.0
-            groups[grp]['users'][usr]['shell_usage'] = 0.0
             w_grp += groups[grp]['users'][usr]['weight']
             i += 1
 
@@ -346,35 +455,6 @@ def collectGroupData(verbose = False):
             groups[grp]['users'][usr]['su_usage'] = float(w[3]) * 1000.0
             i += 1
             
-        # Analyze shell_quota
-        groups[grp]['shell_quota'] = 1.0
-        groups[grp]['shell_usage'] = 0.5
-        
-        #ret = subprocess.run(['shell_quota', '--proj', grp, '--show-vol'],
-        #                     capture_output = True, text = True, check = True)
-        #rettxt = ret.stdout
-        #ll = rettxt.splitlines()
-        #i = 1
-        #if not ll[i].startswith('Total Project Quota:'):
-        #    raise Exception('Found unexpected line in output from shell_quota, %s.' % (ll[i]))
-        #w = ll[i].split()
-        #groups[grp]['shell_quota'] = utils.getSizeFromString(w[3], w[4])
-        #i += 1
-        #if not ll[i].startswith('Total Project Usage:'):
-        #    raise Exception('Found unexpected line in output from shell_quota, %s.' % (ll[i]))
-        #w = ll[i].split()
-        #groups[grp]['shell_usage'] = utils.getSizeFromString(w[3], w[4])
-        #while i < len(ll):
-        #    if not ll[i].startswith('user/'):
-        #        i += 1
-        #        continue
-        #    w = ll[i].split()
-        #    usr = w[0][5:]
-        #    if not usr in groups[grp]['users']:
-        #        raise Exception('Could not find user "%s" from shell_quota output in group "%s".' % (usr, grp))
-        #    groups[grp]['users'][usr]['shell_usage'] = utils.getSizeFromString(w[4], w[5])
-        #    i += 1
-        
     if verbose:
         utils.printLine()
         print('Group data')
@@ -393,32 +473,34 @@ def printGroupData(groups):
         w_tot += groups[grp]['weight']
         
     for grp in groups.keys():
-        print('%-20s   weight   SU           scratch      shell' % (grp))
+        print('%-20s   weight   SU           scratch' % (grp))
         for usr in sorted(list(groups[grp]['users'].keys())):
-            print('    %-12s %-3s   %.2f     %8.2e     %8.2e     %8.2e' \
+            print('    %-12s %-3s   %.2f     %8.2e     %8.2e' \
                   % (usr, 
                      groups[grp]['users'][usr]['people_type'],
                      groups[grp]['users'][usr]['weight'], 
                      groups[grp]['users'][usr]['su_usage'],
-                     groups[grp]['users'][usr]['scratch_usage'],
-                     groups[grp]['users'][usr]['shell_usage']))
+                     groups[grp]['users'][usr]['scratch_usage']))
         print('    --------------------------------------------------------------')
-        print('    TOTAL              %.2f     %8.2e     %8.2e     %8.2e' \
+        print('    TOTAL              %.2f     %8.2e     %8.2e' \
               % (groups[grp]['weight'],
                  groups[grp]['su_usage'],
-                 groups[grp]['scratch_usage'],
-                 groups[grp]['shell_usage']))
-        print('    AVAILABLE         %5.2f     %8.2e     %8.2e     %8.2e' \
+                 groups[grp]['scratch_usage']))
+        print('    AVAILABLE         %5.2f     %8.2e     %8.2e' \
               % (w_tot,
                  groups[grp]['su_quota'],
-                 groups[grp]['scratch_quota'],
-                 groups[grp]['shell_quota']))
-        print('    FRACTION          %4.1f%%       %5.2f%%       %5.2f%%       %5.2f%%' \
+                 groups[grp]['scratch_quota']))
+        print('    FRACTION          %4.1f%%       %5.2f%%       %5.2f%%' \
               % (100.0 * groups[grp]['weight'] / w_tot, 
                  100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
-                 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'],
-                 100.0 * groups[grp]['shell_usage'] / groups[grp]['shell_quota']))
+                 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
         print()
+    
+    return
+
+###################################################################################################
+
+def sendMessage():
     
     return
 
