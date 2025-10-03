@@ -74,7 +74,7 @@ astro_lists['professorial']       = {'people_type': 'ttk'}
 
 users_extra = {}
 
-# Faculty who have left
+# Past faculty
 users_extra['tkomacek']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
 users_extra['ekempton']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
 
@@ -82,7 +82,7 @@ users_extra['ekempton']     = {'people_type': 'ttk', 'past_user': True, 'weight'
 users_extra['jdema']        = {'people_type': 'gs',  'past_user': True}
 
 # Current undergrads
-users_extra['mlessard']     = {'people_type': 'ug'}
+users_extra['mlessard']     = {'people_type': 'ug',  'past_user': False}
 
 # Past undergrads
 users_extra['zvladimi']     = {'people_type': 'ug',  'past_user': True}

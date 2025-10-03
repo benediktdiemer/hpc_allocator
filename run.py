@@ -361,7 +361,7 @@ def collectUserData(verbose = False):
         f.close()
         for l in ll:
             uid = (l.split('@')[0]).lower()
-            users[uid] = {'people_type': ptype}
+            users[uid] = {'people_type': ptype, 'past_user': False}
     
     users.update(cfg.users_extra)
     
@@ -394,7 +394,7 @@ def collectGroupData(verbose = False):
         return grps_cur
     
     # Get user data
-    users = collectUserData(verbose = False)
+    known_users = collectUserData(verbose = False)
     
     # Get group users
     w_tot = 0.0
@@ -418,26 +418,40 @@ def collectGroupData(verbose = False):
         if ll[i].strip() != '# User quotas':
             raise Exception('Expected "# User quotas" in line 4 of output.')
         i += 2
+        
+        # Find users in list
         w_grp = 0.0
         while i < len(ll):
             w = ll[i].split()
             usr = w[0]
             groups[grp]['users'][usr] = {}
             groups[grp]['users'][usr]['scratch_usage'] = utils.getSizeFromString(w[1], w[2])
-            if usr in users:
-                ptype = users[usr]['people_type']
+            
+            # Get user details from known users if possible. Weight may or may not have been set.
+            weight = None
+            if usr in known_users:
+                ptype = known_users[usr]['people_type']
+                past_user = known_users[usr]['past_user']
+                if 'weight' in known_users[usr]:
+                    weight = known_users[usr]['weight']
             else:
                 print('WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
                 ptype = 'tbd'
+                past_user = False
+            
+            # If weight has not been set explicitly, make it zero for past users and dependent on 
+            # people type otherwise.
+            if weight is None:
+                if past_user:
+                    weight = 0.0
+                else:
+                    weight = cfg.people_types[ptype]['weight']
             groups[grp]['users'][usr]['people_type'] = ptype
-            if (usr in users) and ('weight' in users[usr]):
-                groups[grp]['users'][usr]['weight'] = users[usr]['weight']
-            elif (usr in users) and ('past_user' in users[usr]) and (users[usr]['past_user']):
-                groups[grp]['users'][usr]['weight'] = 0.0
-                groups[grp]['users'][usr]['past_user'] = True
-            else:
-                groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
+            groups[grp]['users'][usr]['past_user'] = past_user
+            groups[grp]['users'][usr]['weight'] = weight
             groups[grp]['users'][usr]['su_usage'] = 0.0
+            
+            # Sum group weight from users
             w_grp += groups[grp]['users'][usr]['weight']
             i += 1
 
@@ -501,10 +515,10 @@ def printGroupData(groups):
         
     for grp in groups.keys():
         print('%-20s' % (grp))
-        print('    User         Pos      Weight   SU           Scratch')
+        print('    User         Pos  Ex  Weight   SU           Scratch')
         print('    --------------------------------------------------------------')
         for usr in sorted(list(groups[grp]['users'].keys())):
-            print(groups[grp]['users'][usr])
+            #print(groups[grp]['users'][usr])
             if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
                 str_previous = 'x'
             else:
