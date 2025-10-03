@@ -68,6 +68,8 @@ def main():
         
         if args.op_type == 'check':
             checkStatus()
+        elif args.op_type == 'groupinfo':
+            printCurrentGroups()
         elif args.op_type == 'emailtest':
             messaging.testMessage(do_send = True)
         else:
@@ -430,6 +432,9 @@ def collectGroupData(verbose = False):
             groups[grp]['users'][usr]['people_type'] = ptype
             if (usr in users) and ('weight' in users[usr]):
                 groups[grp]['users'][usr]['weight'] = users[usr]['weight']
+            elif (usr in users) and ('past_user' in users[usr]) and (users[usr]['past_user']):
+                groups[grp]['users'][usr]['weight'] = 0.0
+                groups[grp]['users'][usr]['past_user'] = True
             else:
                 groups[grp]['users'][usr]['weight'] = cfg.people_types[ptype]['weight']
             groups[grp]['users'][usr]['su_usage'] = 0.0
@@ -473,6 +478,21 @@ def collectGroupData(verbose = False):
 
 ###################################################################################################
 
+def printCurrentGroups():
+
+    if not os.path.exists(cfg.pickle_file_grps_cur):
+        raise Exception('Could not find pickle file for current groups.')
+
+    pFile = open(cfg.pickle_file_grps_cur, 'rb')
+    dic_grps_prev = pickle.load(pFile)
+    pFile.close()
+
+    printGroupData(dic_grps_prev['grps_cur'])
+               
+    return
+
+###################################################################################################
+
 def printGroupData(groups):
 
     w_tot = 0.0
@@ -480,11 +500,19 @@ def printGroupData(groups):
         w_tot += groups[grp]['weight']
         
     for grp in groups.keys():
-        print('%-20s   weight   SU           scratch' % (grp))
+        print('%-20s' % (grp))
+        print('    User         Pos      Weight   SU           Scratch')
+        print('    --------------------------------------------------------------')
         for usr in sorted(list(groups[grp]['users'].keys())):
-            print('    %-12s %-3s   %.2f     %8.2e     %8.2e' \
+            print(groups[grp]['users'][usr])
+            if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
+                str_previous = 'x'
+            else:
+                str_previous = ' '
+            print('    %-12s %-3s  %s   %.2f     %8.2e     %8.2e' \
                   % (usr, 
                      groups[grp]['users'][usr]['people_type'],
+                     str_previous,
                      groups[grp]['users'][usr]['weight'], 
                      groups[grp]['users'][usr]['su_usage'],
                      groups[grp]['users'][usr]['scratch_usage']))

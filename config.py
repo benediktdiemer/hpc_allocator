@@ -78,8 +78,8 @@ users_extra = {}
 users_extra['tkomacek']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
 users_extra['ekempton']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
 
-# Current grad students
-users_extra['jdema']     = {'people_type': 'gs'}
+# Past grad students
+users_extra['jdema']        = {'people_type': 'gs',  'past_user': True}
 
 # Current undergrads
 users_extra['mlessard']     = {'people_type': 'ug'}
