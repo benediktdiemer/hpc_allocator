@@ -69,7 +69,7 @@ def main():
         if args.op_type == 'check':
             checkStatus()
         elif args.op_type == 'groupinfo':
-            printCurrentGroups()
+            printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
         elif args.op_type == 'emailtest':
             messaging.testMessage(do_send = True)
         else:
@@ -147,7 +147,7 @@ def checkStatus(verbose = False):
             utils.printLine()
             print('    Current group data')
             utils.printLine()
-            printGroupData(grps_cur)
+            utils.printGroupData(grps_cur)
             utils.printLine()
     else:
         print('    Current group data already up to date, loading from file...')
@@ -485,14 +485,14 @@ def collectGroupData(verbose = False):
         utils.printLine()
         print('Group data')
         utils.printLine()
-        printGroupData(groups)
+        utils.printGroupData(groups)
         utils.printLine()
         
     return groups
 
 ###################################################################################################
 
-def printCurrentGroups():
+def printCurrentGroups(show_weight = True, show_su = True, show_scratch = True):
 
     if not os.path.exists(cfg.pickle_file_grps_cur):
         raise Exception('Could not find pickle file for current groups.')
@@ -501,49 +501,9 @@ def printCurrentGroups():
     dic_grps_prev = pickle.load(pFile)
     pFile.close()
 
-    printGroupData(dic_grps_prev['grps_cur'])
+    utils.printGroupData(dic_grps_prev['grps_cur'], show_weight = show_weight, 
+                   show_su = show_su, show_scratch = show_scratch)
                
-    return
-
-###################################################################################################
-
-def printGroupData(groups):
-
-    w_tot = 0.0
-    for grp in groups.keys():
-        w_tot += groups[grp]['weight']
-        
-    for grp in groups.keys():
-        print('%-20s' % (grp))
-        print('    User         Pos  Ex  Weight   SU           Scratch')
-        print('    --------------------------------------------------------------')
-        for usr in sorted(list(groups[grp]['users'].keys())):
-            if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
-                str_previous = 'x'
-            else:
-                str_previous = ' '
-            print('    %-12s %-3s  %s   %.2f     %8.2e     %8.2e' \
-                  % (usr, 
-                     groups[grp]['users'][usr]['people_type'],
-                     str_previous,
-                     groups[grp]['users'][usr]['weight'], 
-                     groups[grp]['users'][usr]['su_usage'],
-                     groups[grp]['users'][usr]['scratch_usage']))
-        print('    --------------------------------------------------------------')
-        print('    TOTAL                 %.2f     %8.2e     %8.2e' \
-              % (groups[grp]['weight'],
-                 groups[grp]['su_usage'],
-                 groups[grp]['scratch_usage']))
-        print('    AVAILABLE            %5.2f     %8.2e     %8.2e' \
-              % (w_tot,
-                 groups[grp]['su_quota'],
-                 groups[grp]['scratch_quota']))
-        print('    FRACTION             %4.1f%%       %5.2f%%       %5.2f%%' \
-              % (100.0 * groups[grp]['weight'] / w_tot, 
-                 100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
-                 100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))
-        print()
-    
     return
 
 ###################################################################################################

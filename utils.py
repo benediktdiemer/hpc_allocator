@@ -18,33 +18,79 @@ first_quarter_idx = 4
 
 ###################################################################################################
 
-# Outputs are like "5.02 TB" and such, which needs to be parsed to a number in GB.
-
-def getSizeFromString(num_str, unit_str):
-
-    num = float(num_str)
-    if unit_str.upper() == 'B':
-        fac = 1024.0**-3
-    elif unit_str.upper() == 'KB':
-        fac = 1024.0**-2
-    elif unit_str.upper() == 'MB':
-        fac = 1024.0**-1
-    elif unit_str.upper() == 'GB':
-        fac = 1.0
-    elif unit_str.upper() == 'TB':
-        fac = 1024.0
-    else:
-        raise Exception('Unknown file size unit, "%s".' % (unit_str))
-    sze = num * fac
-    
-    return sze
-
-###################################################################################################
-
 def printLine():
 
     print('--------------------------------------------------------------------------------')
 
+    return
+
+###################################################################################################
+
+def printGroupData(groups, show_pos = True, show_weight = True, show_su = True, show_scratch = True):
+
+    w_tot = 0.0
+    for grp in groups.keys():
+        w_tot += groups[grp]['weight']
+        
+    for grp in groups.keys():
+        print('%-20s' % (grp))
+        s1 = '    User        '
+        s2 = '    ------------'
+        if show_pos:
+            s1 += 'Pos  Ex  '
+            s2 += '---------'
+        if show_weight:
+            s1 += 'Weight   '
+            s2 += '---------'
+        if show_su:
+            s1 += 'SU           '
+            s2 += '-------------'
+        if show_scratch:
+            s1 += 'Scratch      '
+            s2 += '-------------'
+        print(s1)
+        print(s2)
+        for usr in sorted(list(groups[grp]['users'].keys())):
+            s1 = '    %-12s' % (usr)
+            if show_pos:
+                if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
+                    str_previous = 'x'
+                else:
+                    str_previous = ' '
+                s1 += '%-3s  %s   ' % (groups[grp]['users'][usr]['people_type'], str_previous)
+            if show_weight:
+                s1 += '%.2f     ' % (groups[grp]['users'][usr]['weight'])
+            if show_su:
+                s1 += '%8.2e     ' % (groups[grp]['users'][usr]['su_usage'])
+            if show_scratch:
+                s1 += '%8.2e     ' % (groups[grp]['users'][usr]['scratch_usage'])
+            print(s1)
+
+        print(s2)
+        s1 = '    TOTAL      '
+        s2 = '    AVAILABLE  '
+        s3 = '    FRACTION   '
+        if show_pos:
+            s1 += '         '
+            s2 += '         '
+            s3 += '         '
+        if show_weight:
+            s1 += '%5.2f     ' % (groups[grp]['weight'])
+            s2 += '%5.2f     ' % (w_tot)
+            s3 += '%4.1f%%       ' % (100.0 * groups[grp]['weight'] / w_tot)
+        if show_su:
+            s1 += '%8.2e     ' % (groups[grp]['su_usage'])
+            s2 += '%8.2e     ' % (groups[grp]['su_quota'])
+            s3 += '%5.2f%%       ' % (100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'])
+        if show_scratch:
+            s1 += '%8.2e     ' % (groups[grp]['scratch_usage'])
+            s2 += '%8.2e     ' % (groups[grp]['scratch_quota'])
+            s3 += '%5.2f%%       ' % (100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'])
+        print(s1)
+        print(s2)
+        print(s3)
+        print()
+    
     return
 
 ###################################################################################################
@@ -78,6 +124,29 @@ def getTimes():
         p -= 1
     
     return yr, q_yr, q_all, p, d
+
+###################################################################################################
+
+# Outputs are like "5.02 TB" and such, which needs to be parsed to a number in GB.
+
+def getSizeFromString(num_str, unit_str):
+
+    num = float(num_str)
+    if unit_str.upper() == 'B':
+        fac = 1024.0**-3
+    elif unit_str.upper() == 'KB':
+        fac = 1024.0**-2
+    elif unit_str.upper() == 'MB':
+        fac = 1024.0**-1
+    elif unit_str.upper() == 'GB':
+        fac = 1.0
+    elif unit_str.upper() == 'TB':
+        fac = 1024.0
+    else:
+        raise Exception('Unknown file size unit, "%s".' % (unit_str))
+    sze = num * fac
+    
+    return sze
 
 ###################################################################################################
 
