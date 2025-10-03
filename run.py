@@ -518,7 +518,6 @@ def printGroupData(groups):
         print('    User         Pos  Ex  Weight   SU           Scratch')
         print('    --------------------------------------------------------------')
         for usr in sorted(list(groups[grp]['users'].keys())):
-            #print(groups[grp]['users'][usr])
             if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
                 str_previous = 'x'
             else:
@@ -531,15 +530,15 @@ def printGroupData(groups):
                      groups[grp]['users'][usr]['su_usage'],
                      groups[grp]['users'][usr]['scratch_usage']))
         print('    --------------------------------------------------------------')
-        print('    TOTAL              %.2f     %8.2e     %8.2e' \
+        print('    TOTAL                 %.2f     %8.2e     %8.2e' \
               % (groups[grp]['weight'],
                  groups[grp]['su_usage'],
                  groups[grp]['scratch_usage']))
-        print('    AVAILABLE         %5.2f     %8.2e     %8.2e' \
+        print('    AVAILABLE            %5.2f     %8.2e     %8.2e' \
               % (w_tot,
                  groups[grp]['su_quota'],
                  groups[grp]['scratch_quota']))
-        print('    FRACTION          %4.1f%%       %5.2f%%       %5.2f%%' \
+        print('    FRACTION             %4.1f%%       %5.2f%%       %5.2f%%' \
               % (100.0 * groups[grp]['weight'] / w_tot, 
                  100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'],
                  100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota']))

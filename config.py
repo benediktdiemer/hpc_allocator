@@ -57,7 +57,7 @@ people_types['gs']  = {'desc': 'Grad student', 'weight': 0.2}
 people_types['ug']  = {'desc': 'Undergrad',    'weight': 0.1}
 people_types['tbd'] = {'desc': 'Unknown',      'weight': 0.0}
 
-weight_past_faculty = 0.4
+weight_past_faculty = 0.5
 
 ###################################################################################################
 # USER DATA
@@ -75,18 +75,20 @@ astro_lists['professorial']       = {'people_type': 'ttk'}
 users_extra = {}
 
 # Past faculty
-users_extra['tkomacek']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
 users_extra['ekempton']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
+users_extra['tkomacek']     = {'people_type': 'ttk', 'past_user': True, 'weight': weight_past_faculty}
 
 # Past grad students
+users_extra['dittmann']     = {'people_type': 'gs',  'past_user': True}
 users_extra['jdema']        = {'people_type': 'gs',  'past_user': True}
 
 # Current undergrads
 users_extra['mlessard']     = {'people_type': 'ug',  'past_user': False}
 
 # Past undergrads
-users_extra['zvladimi']     = {'people_type': 'ug',  'past_user': True}
+users_extra['fgarcia4']     = {'people_type': 'ug',  'past_user': True}
 users_extra['wenxi523']     = {'people_type': 'ug',  'past_user': True}
+users_extra['zvladimi']     = {'people_type': 'ug',  'past_user': True}
 
 ###################################################################################################
 # GROUPS
