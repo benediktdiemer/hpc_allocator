@@ -26,20 +26,21 @@ def testMessage(do_send = False):
 
 ###################################################################################################
 
-def sendMessage(recipient, subject, content, do_send = False, verbose = False):
+# This function saves messages to text file and, if do_send is True, attempts to send them via
+# email.
 
-    if not do_send:
+def sendMessage(recipient, subject, content, do_send = False, verbose = False):
+    
+    time_str = str(datetime.datetime.now())[:-4]
+    time_str = time_str.replace(' ', '_').replace('-', '_').replace(':', '_')
+    fname = cfg.email_dir + time_str + '_' + recipient + '.txt'
+    f = open(fname, 'w')
+    f.write('Subject: %s' % (subject))
+    f.write('\n\n')
+    f.write(content)
+    f.close()
         
-        time_str = str(datetime.datetime.now())[:-4]
-        time_str = time_str.replace(' ', '_').replace('-', '_').replace(':', '_')
-        fname = cfg.email_dir + time_str + '_' + recipient + '.txt'
-        f = open(fname, 'w')
-        f.write('Subject: %s' % (subject))
-        f.write('\n\n')
-        f.write(content)
-        f.close()
-        
-    else:
+    if do_send:
 
         msg = EmailMessage()
         msg['From'] = cfg.sender_email 

@@ -51,13 +51,13 @@ pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
 
 people_types = {}
 people_types['ttk'] = {'desc': 'TTK faculty',  'weight': 1.0}
-people_types['ptk'] = {'desc': 'PTK faculty',  'weight': 0.3}
-people_types['pd']  = {'desc': 'Postdoc',      'weight': 0.2}
-people_types['gs']  = {'desc': 'Grad student', 'weight': 0.15}
-people_types['ug']  = {'desc': 'Undergrad',    'weight': 0.05}
+people_types['ptk'] = {'desc': 'PTK faculty',  'weight': 0.4}
+people_types['pd']  = {'desc': 'Postdoc',      'weight': 0.3}
+people_types['gs']  = {'desc': 'Grad student', 'weight': 0.2}
+people_types['ug']  = {'desc': 'Undergrad',    'weight': 0.1}
 people_types['tbd'] = {'desc': 'Unknown',      'weight': 0.0}
 
-weight_past_faculty = 0.5
+weight_past_faculty = 0.4
 
 ###################################################################################################
 # USER DATA
