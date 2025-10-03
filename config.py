@@ -7,7 +7,36 @@
 ###################################################################################################
 
 from collections import OrderedDict
+import configparser
+import os
 
+###################################################################################################
+# EMAIL CONFIG
+###################################################################################################
+
+# The email module relies on sensitive info such as an app password and should thus not be stored
+# in the code. Instead, create a email.cfg file in the directory where the code is run. The file
+# should look like this:
+#
+# [login]
+# email = <admin's UMD email>
+# password = <admin's app password (created in Google account)>
+# test_email = <another email to which a test can be sent>
+
+parser = configparser.ConfigParser()
+if not os.path.exists('email.cfg'):
+    raise Exception('Could not find email.cfg file.')
+parser.read('email.cfg')
+sender_email = parser['login']['email']
+sender_password = parser['login']['password']
+test_email = parser['login']['test_email']
+
+# If we are in dry run mode, output emails as text files into this directory
+
+email_dir = 'emails/'
+
+###################################################################################################
+# PICKLE STORAGE
 ###################################################################################################
 
 # The pickle protocol should be fixed to make it exchangeable between machines
@@ -17,8 +46,8 @@ pickle_file_cfg = '%s/current_config.pkl' % (pickle_dir)
 pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
 
 ###################################################################################################
-
-# Set possible categories of HPC users and their allocation weights
+# USER CATEGORIES
+###################################################################################################
 
 people_types = {}
 people_types['ttk'] = {'desc': 'TTK faculty',  'weight': 1.0}
@@ -30,6 +59,8 @@ people_types['tbd'] = {'desc': 'Unknown',      'weight': 0.0}
 
 weight_past_faculty = 0.5
 
+###################################################################################################
+# USER DATA
 ###################################################################################################
 
 # Set user data. First we pull users automatically from a number of astro lists (email exploders)
@@ -58,6 +89,8 @@ users_extra['zvladimi']     = {'people_type': 'ug',  'past_user': True}
 users_extra['wenxi523']     = {'people_type': 'ug',  'past_user': True}
 
 ###################################################################################################
+# GROUPS
+###################################################################################################
 
 # Set group data; note that the username of the group leader does not necessarily match the name
 # of the project.
@@ -76,6 +109,8 @@ groups['jsunshin-prj'] = {'lead': 'jsunshin'}
 groups['mwm-prj']      = {'lead': 'mwm'}
 groups['qye-prj']      = {'lead': 'qye'}
 
+###################################################################################################
+# ALLOCATION PERIODS WITHIN EACH QUARTER
 ###################################################################################################
 
 # Allocation periods. The allocation fraction is the fraction of the total SUs remaining that is

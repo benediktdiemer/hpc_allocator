@@ -15,8 +15,10 @@ import os
 
 import config as cfg
 import utils
-import email
+import messaging
 
+###################################################################################################
+# MODES
 ###################################################################################################
 
 # In test mode, the code can be executed on a machine other than an HPC cluster. The command-line
@@ -49,6 +51,12 @@ def main():
         parser.add_argument('mode', type = str, help = helpstr)
     
         args = parser.parse_args()
+    
+        utils.printLine()
+        print('Welcome to the HPC Allocator')
+        utils.printLine()
+        print('Settings: operation = %s, mode = %s, test_mode = %s, dry_run = %s.' \
+              % (args.op_type, args.mode, str(test_mode), str(dry_run)))
 
         if args.mode == 'test':
             test_mode = True
@@ -61,7 +69,7 @@ def main():
         if args.op_type == 'check':
             checkStatus()
         elif args.op_type == 'emailtest':
-            email.sendMessage()
+            messaging.testMessage(do_send = True)
         else:
             raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.op_type))
         
@@ -84,11 +92,6 @@ def main():
 # - If not new quarter / period, check for usage close to allocation
 
 def checkStatus(verbose = False):
-
-    utils.printLine()
-    print('HPC Allocator: Checking status')
-    utils.printLine()
-    print('Settings: test_mode = %s, dry_run = %s.' % (str(test_mode), str(dry_run)))
 
     # ---------------------------------------------------------------------------------------------
     # Date config: Compute date, quarter, period; check for changes
