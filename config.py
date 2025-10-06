@@ -83,7 +83,7 @@ users_extra['dittmann']     = {'people_type': 'gs',  'past_user': True}
 users_extra['jdema']        = {'people_type': 'gs',  'past_user': True}
 
 # Current undergrads
-users_extra['mlessard']     = {'people_type': 'ug',  'past_user': False}
+users_extra['mlessard']     = {'people_type': 'ug',  'past_user': True}
 
 # Past undergrads
 users_extra['fgarcia4']     = {'people_type': 'ug',  'past_user': True}
