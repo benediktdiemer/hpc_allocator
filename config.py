@@ -83,10 +83,12 @@ users_extra['dittmann']     = {'people_type': 'gs',  'past_user': True}
 users_extra['jdema']        = {'people_type': 'gs',  'past_user': True}
 
 # Current undergrads
-users_extra['mlessard']     = {'people_type': 'ug',  'past_user': True}
+users_extra['adayal']       = {'people_type': 'ug',  'past_user': False}
+users_extra['bnowicki']     = {'people_type': 'ug',  'past_user': False}
 
 # Past undergrads
 users_extra['fgarcia4']     = {'people_type': 'ug',  'past_user': True}
+users_extra['mlessard']     = {'people_type': 'ug',  'past_user': True}
 users_extra['wenxi523']     = {'people_type': 'ug',  'past_user': True}
 users_extra['zvladimi']     = {'people_type': 'ug',  'past_user': True}
 
