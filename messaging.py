@@ -26,14 +26,51 @@ def testMessage(do_send = False):
 
 ###################################################################################################
 
+def messageNewPeriodLead(prd_grp_data):
+    
+    # TODO
+    
+    return
+
+###################################################################################################
+
+def messageNewPeriodMembers(prd_grp_data):
+     
+    # TODO
+       
+    return
+
+###################################################################################################
+
+def messageUsageWarning(prd_grp_data):
+     
+    # TODO
+       
+    return
+
+###################################################################################################
+
+def messageUsageWarningZeroAlloc(prd_grp_data):
+     
+    # TODO
+       
+    return
+
+###################################################################################################
+
 # This function saves messages to text file and, if do_send is True, attempts to send them via
 # email.
 
 def sendMessage(recipient, subject, content, do_send = False, verbose = False):
     
+    if do_send:
+        email_dir = cfg.email_dir_sent
+    else:
+        email_dir = cfg.email_dir_draft
+    
     time_str = str(datetime.datetime.now())[:-4]
     time_str = time_str.replace(' ', '_').replace('-', '_').replace(':', '_')
-    fname = cfg.email_dir + time_str + '_' + recipient + '.txt'
+    fname = email_dir + time_str + '_' + recipient + '.txt'
     f = open(fname, 'w')
     f.write('Subject: %s' % (subject))
     f.write('\n\n')

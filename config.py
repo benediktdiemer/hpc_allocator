@@ -33,7 +33,8 @@ test_email = parser['login']['test_email']
 
 # If we are in dry run mode, output emails as text files into this directory
 
-email_dir = 'emails/'
+email_dir_draft = 'emails_draft/'
+email_dir_sent = 'emails_sent/'
 
 ###################################################################################################
 # PICKLE STORAGE
@@ -128,5 +129,14 @@ periods[2] = {'start_day': 60, 'alloc_frac': 2.0}
 periods[3] = {'start_day': 80, 'alloc_frac': None}
 
 n_periods = len(periods)
+
+###################################################################################################
+# LEVELS WHEN WARNINGS ARE SENT OUT
+###################################################################################################
+
+# When the usage of a group exceeds the following ratios with their total allocation for the first
+# time, an email is sent. The fractions are expressed as percent so that they are integers.
+
+warning_levels = [80, 100]
 
 ###################################################################################################

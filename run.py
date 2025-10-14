@@ -279,16 +279,20 @@ def checkStatus(verbose = False):
                 pickle.dump(dic_q_prev, output_file, cfg.pickle_protocol)
                 output_file.close()
 
-            # Send out email with allocation details, oversubscription warning
-            # usage in previous period, penalties if applicable
-            
-            # TODO
+            # Send out email with allocation details, oversubscription warning, usage in previous 
+            # period, penalties if applicable, and so on to the lead. The members receive a 
+            # simplified version that does not state how the allocation was computed.
+            messaging.messageNewPeriodLead(prd_new['groups'][grp])
+            messaging.messageNewPeriodMembers(prd_new['groups'][grp])
 
     # ---------------------------------------------------------------------------------------------
     # If there is no new period: Usage warnings
 
-    else:
+    # For dry runs, we execute the following part since any new period data will not be stored in 
+    # the pickles.
+    if (not new_period) or dry_run:
         
+        print('Checking usage against allocations...')
         prd_cur = prds[p]
         for grp in grps_cur:
             
@@ -298,10 +302,39 @@ def checkStatus(verbose = False):
                 continue
         
             # Update SU usage from cumulative
-            prd_cur['groups'][grp]['su_usage'] = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
+            su_usage_old = prd_cur['groups'][grp]['su_usage']
+            su_usage_new = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
+            prd_cur['groups'][grp]['su_usage'] = su_usage_new
             
-            # Check for close-to-limit
-            # TODO
+            # Compute fraction of allocation and warn users if necessary. In the case where a 
+            # group has a finite allocation, we check for fractions that exceed a warning level 
+            # but did not exceed it given the old usage (so that emails are only sent once).
+            #          
+            # If a group got an allocation of zero (presumably due to a penalty), we send out an
+            # email every time the absolute usage has changed.
+            su_alloc = prd_cur['groups'][grp]['alloc']
+            if su_alloc > 0.0:
+                usage_prct_old = su_usage_old / su_alloc * 100.0
+                usage_prct_new = su_usage_new / su_alloc * 100.0
+                warned_level = -1
+                if su_usage_new > 0.0:
+                    for ii in range(len(cfg.warning_levels)):
+                        i = len(cfg.warning_levels) - ii - 1
+                        if (usage_prct_new > cfg.warning_levels[i]) and (usage_prct_old <= cfg.warning_levels[i]):
+                            #print('Group %-15s went from %.0f%% to %.0f%% of allocation, sending warning.' % \
+                            #      (grp, usage_prct_old, usage_prct_new))
+                            messaging.messageUsageWarning(prd_cur['groups'][grp])
+                            warned_level = i
+                            break
+                s = '    Group %-15s allocation %6.1f kSU, usage %6.1f -> %6.1f kSU, fraction %5.1f -> %5.1f%%' \
+                      % (grp, su_alloc / 1000.0, su_usage_old / 1000.0, su_usage_new / 1000.0, 
+                         usage_prct_old, usage_prct_new)
+                if warned_level >= 0:
+                    s += ' (%d%% warning)' % (cfg.warning_levels[warned_level])
+                print(s)
+            else:
+                if su_usage_new > usage_prct_old + 1.0:
+                    messaging.messageUsageWarningZeroAlloc(prd_cur['groups'][grp])
 
     # ---------------------------------------------------------------------------------------------
     # Store changes to current quarter/period data and status
