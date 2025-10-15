@@ -43,8 +43,8 @@ email_dir_sent = 'emails_sent/'
 # The pickle protocol should be fixed to make it exchangeable between machines
 pickle_protocol = 5
 pickle_dir = 'pickles/'
-pickle_file_cfg = '%s/current_config.pkl' % (pickle_dir)
-pickle_file_grps_cur = '%s/groups_current.pkl' % (pickle_dir)
+pickle_file_cfg = '%s/current_config.yaml' % (pickle_dir)
+pickle_file_grps_cur = '%s/groups_current.yaml' % (pickle_dir)
 
 ###################################################################################################
 # USER CATEGORIES
@@ -105,7 +105,7 @@ groups['diemer-prj']   = {'lead': 'diemer'}
 groups['dphamil-prj']  = {'lead': 'dphamil'}
 groups['kempton-prj']  = {'lead': 'ekempton'}
 groups['lkolokol-prj'] = {'lead': 'lkolokol'}
-groups['komacek-prj']  = {'lead': 'diemer'}
+groups['komacek-prj']  = {'lead': 'tkomacek'}
 groups['miller-prj']   = {'lead': 'mcmiller'}
 groups['creynold-prj'] = {'lead': 'creynold'}
 groups['dcr-prj']      = {'lead': 'dcr'}
@@ -123,12 +123,22 @@ groups['qye-prj']      = {'lead': 'qye'}
 # oversubscription factor.
 
 periods = OrderedDict()
-periods[0] = {'start_day': 0,  'alloc_frac': 0.5,  'label': '1st'}
-periods[1] = {'start_day': 30, 'alloc_frac': 0.9,  'label': '2nd'}
+periods[0] = {'start_day': 0,  'alloc_frac': 0.9,  'label': '1st'}
+periods[1] = {'start_day': 30, 'alloc_frac': 1.5,  'label': '2nd'}
 periods[2] = {'start_day': 60, 'alloc_frac': 2.0,  'label': '3rd'}
 periods[3] = {'start_day': 80, 'alloc_frac': None, 'label': 'final'}
 
 n_periods = len(periods)
+
+###################################################################################################
+# PENALTY SETTINGS
+###################################################################################################
+
+# If there is no additional penalty for exceeding allocations, that would create a perverse 
+# incentive to do so since time earlier in the quarter is "more valuable" than time later, when the
+# oversubscription factors are larger.
+
+penalty_factor = 1.0
 
 ###################################################################################################
 # LEVELS WHEN WARNINGS ARE SENT OUT
