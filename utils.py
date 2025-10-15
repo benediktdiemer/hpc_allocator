@@ -96,7 +96,7 @@ def printGroupData(groups,
         ll.append(s1)
         ll.append(s2)
         ll.append(s3)
-        ll.append()
+        ll.append('')
         
     if do_print:
         for l in ll:
