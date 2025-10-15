@@ -26,16 +26,24 @@ def printLine():
 
 ###################################################################################################
 
-def printGroupData(groups, 
+def getTotalWeight(groups):
+
+    w_tot = 0.0
+    for grp in groups.keys():
+        w_tot += groups[grp]['weight']
+    
+    return w_tot
+
+###################################################################################################
+
+def printGroupData(groups, w_tot = None,
                    show_pos = True, show_weight = True, show_su = True, show_scratch = True,
                    only_grp = None,
                    do_print = True):
 
-#    if w_tot is None:
-#        w_tot = 0.0
-#        for grp in groups.keys():
-#            w_tot += groups[grp]['weight']
-    
+    if w_tot is None:
+        w_tot = getTotalWeight(groups)
+        
     ll = []
     for grp in groups.keys():
         if (only_grp is not None) and (grp != only_grp):

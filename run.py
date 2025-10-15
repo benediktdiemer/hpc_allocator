@@ -215,17 +215,17 @@ def checkStatus(verbose = False):
                 prd_old['groups'] = {}
         
         # Compute total weight
-        #w_tot = 0.0
         for grp in grps_cur:
             prd_new['groups'][grp] = {}
             prd_new['groups'][grp]['weight'] = grps_cur[grp]['weight']
-            #w_tot += grps_cur[grp]['weight']
+        w_tot_cur = utils.getTotalWeight(grps_cur)
+        prd_new['w_tot'] = w_tot_cur
         
         # Go through groups to assign allocations and notify
         for grp in grps_cur:
             
             # Compute weight
-            w_frac = prd_new['groups'][grp]['weight'] / grps_cur['w_tot'] 
+            w_frac = prd_new['groups'][grp]['weight'] / prd_new['w_tot']
             prd_new['groups'][grp]['weight_frac'] = w_frac
 
             # Compute cumulative usage in the previous period. If this is a new quarter, the usage 
@@ -434,7 +434,6 @@ def collectGroupData(verbose = False):
     known_users = collectUserData(verbose = False)
     
     # Get group users
-    w_tot = 0.0
     groups = copy.copy(cfg.groups)
     for grp in groups.keys():
         
@@ -494,7 +493,6 @@ def collectGroupData(verbose = False):
 
         # Set group weight and add to total
         groups[grp]['weight'] = w_grp
-        w_tot += w_grp
 
         # Analyze s_balance to get SU usage
         ret = subprocess.run(['sbalance', '-account', '%s-astr' % (grp), '--all'], 
@@ -517,8 +515,6 @@ def collectGroupData(verbose = False):
                 raise Exception('Found user "%s" in sbalance return but not in group users.' % (usr))
             groups[grp]['users'][usr]['su_usage'] = float(w[3]) * 1000.0
             i += 1
-    
-    groups['w_tot'] = w_tot
     
     if verbose:
         utils.printLine()
