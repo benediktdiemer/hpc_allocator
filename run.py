@@ -236,6 +236,13 @@ def checkStatus(verbose = False):
             w_frac = prd_new['groups'][grp]['weight'] / prd_new['w_tot']
             prd_new['groups'][grp]['weight_frac'] = w_frac
 
+            # Add current users
+            prd_new['groups'][grp]['users'] = {}
+            for usr in grps_cur[grp]['users']:
+                prd_new['groups'][grp]['users'][usr] = {}
+                prd_new['groups'][grp]['users'][usr]['people_type'] = grps_cur[grp]['users'][usr]['people_type']
+                prd_new['groups'][grp]['users'][usr]['past_user'] = grps_cur[grp]['users'][usr]['past_user']  
+
             # Compute cumulative usage in the previous period. If this is a new quarter, the usage 
             # has been reset to zero and we need to use the previous group data. This technically 
             # misses any usage between the last run of the script and this run, but that is 
@@ -245,19 +252,39 @@ def checkStatus(verbose = False):
                     grp_su_usage_cum = grps_prev[grp]['su_usage']
                 else:
                     grp_su_usage_cum = 0.0
-            else:
-                grp_su_usage_cum = grps_cur[grp]['su_usage']
-            if grp in prd_old['groups']:
-                prd_old['groups'][grp]['su_usage'] = grp_su_usage_cum - prd_old['groups'][grp]['su_usage_start']
-            
-            # In new period, set cumulative usage to total from current group data or zero if it
-            # is the first period.
-            if new_quarter:
                 prd_new['groups'][grp]['su_usage_start'] = 0.0
             else:
+                grp_su_usage_cum = grps_cur[grp]['su_usage']
                 prd_new['groups'][grp]['su_usage_start'] = grp_su_usage_cum
             prd_new['groups'][grp]['su_usage'] = 0.0
             
+            # Update old period with final usage
+            if grp in prd_old['groups']:
+                prd_old['groups'][grp]['su_usage'] = grp_su_usage_cum - prd_old['groups'][grp]['su_usage_start']
+            
+            # Now repeat the process for individual users. Users could be only in the old or only 
+            # in the new dataset, so we need to consider a superset of possible users and check
+            # whether they are in each set.
+            all_users = []
+            if grp in prd_old['groups']:
+                all_users += list(prd_old['groups'][grp]['users'].keys())
+            all_users += list(prd_new['groups'][grp]['users'].keys())
+            all_users = list(set(all_users))
+            for usr in all_users:
+                if new_quarter:
+                    if (grp in grps_prev) and (usr in grps_prev[grp]['users']):
+                        usr_su_usage_cum = grps_prev[grp]['users'][usr]['su_usage']
+                    else:
+                        usr_su_usage_cum = 0.0
+                    if usr in prd_new['groups'][grp]['users']:
+                        prd_new['groups'][grp]['users'][usr]['su_usage_start'] = 0.0
+                else:
+                    usr_su_usage_cum = grps_cur[grp]['users'][usr]['su_usage']
+                    prd_new['groups'][grp]['users'][usr]['su_usage_start'] = usr_su_usage_cum
+                if (grp in prd_old['groups']) and (usr in prd_old['groups'][grp]['users']):
+                    prd_old['groups'][grp]['users'][usr]['su_usage'] = usr_su_usage_cum - prd_old['groups'][grp]['users'][usr]['su_usage_start']
+                prd_new['groups'][grp]['users'][usr]['su_usage'] = 0.0
+                
             # Try to find previous penalty if any
             if grp in prd_old['groups']:
                 penalty_old = prd_old['groups'][grp]['penalty_new']
@@ -319,6 +346,10 @@ def checkStatus(verbose = False):
             su_usage_old = prd_cur['groups'][grp]['su_usage']
             su_usage_new = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
             prd_cur['groups'][grp]['su_usage'] = su_usage_new
+            
+            # Update individual user data
+            
+            # TODO
             
             # Compute fraction of allocation and warn users if necessary. In the case where a 
             # group has a finite allocation, we check for fractions that exceed a warning level 
