@@ -112,7 +112,7 @@ def checkStatus(verbose = False):
         prev_d = -1
         print('    WARNING: found no previous config. Re-setting variables.')
         
-    yr, q_yr, q_all, p, d = utils.getTimes()
+    yr, q_yr, q_all, p, d, p_start, p_end = utils.getTimes()
     new_quarter = (prev_q_all != q_all)
     new_period = (prev_p != p)
     new_day = (prev_d != d)
@@ -197,6 +197,10 @@ def checkStatus(verbose = False):
         # Create new period dataset
         print('Starting new period...')
         prds[p] = {}
+        
+        print('    Period runs from %s to %s.' % (p_start.strftime('%Y/%m/%d'), p_end.strftime('%Y/%m/%d')))
+        prds[p]['start_date'] = p_start
+        prds[p]['end_date'] = p_end
         prds[p]['groups'] = {}
         
         # Set shortcuts for new and previous period
@@ -211,17 +215,17 @@ def checkStatus(verbose = False):
                 prd_old['groups'] = {}
         
         # Compute total weight
-        w_tot = 0.0
+        #w_tot = 0.0
         for grp in grps_cur:
             prd_new['groups'][grp] = {}
             prd_new['groups'][grp]['weight'] = grps_cur[grp]['weight']
-            w_tot += grps_cur[grp]['weight']
+            #w_tot += grps_cur[grp]['weight']
         
         # Go through groups to assign allocations and notify
         for grp in grps_cur:
             
             # Compute weight
-            w_frac = prd_new['groups'][grp]['weight'] / w_tot
+            w_frac = prd_new['groups'][grp]['weight'] / grps_cur['w_tot'] 
             prd_new['groups'][grp]['weight_frac'] = w_frac
 
             # Compute cumulative usage in the previous period. If this is a new quarter, the usage 
@@ -282,8 +286,8 @@ def checkStatus(verbose = False):
             # Send out email with allocation details, oversubscription warning, usage in previous 
             # period, penalties if applicable, and so on to the lead. The members receive a 
             # simplified version that does not state how the allocation was computed.
-            messaging.messageNewPeriodLead(prd_new['groups'][grp])
-            messaging.messageNewPeriodMembers(prd_new['groups'][grp])
+            messaging.messageNewPeriodLead(p, prd_new, grp, do_send = (not dry_run))
+            messaging.messageNewPeriodMembers(prd_new['groups'][grp], do_send = (not dry_run))
 
     # ---------------------------------------------------------------------------------------------
     # If there is no new period: Usage warnings
@@ -323,7 +327,7 @@ def checkStatus(verbose = False):
                         if (usage_prct_new > cfg.warning_levels[i]) and (usage_prct_old <= cfg.warning_levels[i]):
                             #print('Group %-15s went from %.0f%% to %.0f%% of allocation, sending warning.' % \
                             #      (grp, usage_prct_old, usage_prct_new))
-                            messaging.messageUsageWarning(prd_cur['groups'][grp])
+                            messaging.messageUsageWarning(prd_cur['groups'][grp], do_send = (not dry_run))
                             warned_level = i
                             break
                 s = '    Group %-15s allocation %6.1f kSU, usage %6.1f -> %6.1f kSU, fraction %5.1f -> %5.1f%%' \
@@ -334,7 +338,7 @@ def checkStatus(verbose = False):
                 print(s)
             else:
                 if su_usage_new > usage_prct_old + 1.0:
-                    messaging.messageUsageWarningZeroAlloc(prd_cur['groups'][grp])
+                    messaging.messageUsageWarningZeroAlloc(prd_cur['groups'][grp], do_send = (not dry_run))
 
     # ---------------------------------------------------------------------------------------------
     # Store changes to current quarter/period data and status
@@ -513,7 +517,9 @@ def collectGroupData(verbose = False):
                 raise Exception('Found user "%s" in sbalance return but not in group users.' % (usr))
             groups[grp]['users'][usr]['su_usage'] = float(w[3]) * 1000.0
             i += 1
-            
+    
+    groups['w_tot'] = w_tot
+    
     if verbose:
         utils.printLine()
         print('Group data')

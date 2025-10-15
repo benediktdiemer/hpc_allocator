@@ -6,7 +6,7 @@
 #
 ###################################################################################################
 
-from datetime import date 
+import datetime
 
 import config as cfg
 
@@ -26,14 +26,21 @@ def printLine():
 
 ###################################################################################################
 
-def printGroupData(groups, show_pos = True, show_weight = True, show_su = True, show_scratch = True):
+def printGroupData(groups, 
+                   show_pos = True, show_weight = True, show_su = True, show_scratch = True,
+                   only_grp = None,
+                   do_print = True):
 
-    w_tot = 0.0
+#    if w_tot is None:
+#        w_tot = 0.0
+#        for grp in groups.keys():
+#            w_tot += groups[grp]['weight']
+    
+    ll = []
     for grp in groups.keys():
-        w_tot += groups[grp]['weight']
-        
-    for grp in groups.keys():
-        print('%-20s' % (grp))
+        if (only_grp is not None) and (grp != only_grp):
+            continue
+        ll.append('%-20s' % (grp))
         s1 = '    User        '
         s2 = '    ------------'
         if show_pos:
@@ -48,8 +55,8 @@ def printGroupData(groups, show_pos = True, show_weight = True, show_su = True, 
         if show_scratch:
             s1 += 'Scratch      '
             s2 += '-------------'
-        print(s1)
-        print(s2)
+        ll.append(s1)
+        ll.append(s2)
         for usr in sorted(list(groups[grp]['users'].keys())):
             s1 = '    %-12s' % (usr)
             if show_pos:
@@ -64,9 +71,9 @@ def printGroupData(groups, show_pos = True, show_weight = True, show_su = True, 
                 s1 += '%8.2e     ' % (groups[grp]['users'][usr]['su_usage'])
             if show_scratch:
                 s1 += '%8.2e     ' % (groups[grp]['users'][usr]['scratch_usage'])
-            print(s1)
+            ll.append(s1)
 
-        print(s2)
+        ll.append(s2)
         s1 = '    TOTAL      '
         s2 = '    AVAILABLE  '
         s3 = '    FRACTION   '
@@ -76,8 +83,8 @@ def printGroupData(groups, show_pos = True, show_weight = True, show_su = True, 
             s3 += '         '
         if show_weight:
             s1 += '%5.2f     ' % (groups[grp]['weight'])
-            s2 += '%5.2f     ' % (w_tot)
-            s3 += '%4.1f%%       ' % (100.0 * groups[grp]['weight'] / w_tot)
+            s2 += '%5.2f     ' % (groups['w_tot'])
+            s3 += '%4.1f%%       ' % (100.0 * groups[grp]['weight'] / groups['w_tot'])
         if show_su:
             s1 += '%8.2e     ' % (groups[grp]['su_usage'])
             s2 += '%8.2e     ' % (groups[grp]['su_quota'])
@@ -86,19 +93,28 @@ def printGroupData(groups, show_pos = True, show_weight = True, show_su = True, 
             s1 += '%8.2e     ' % (groups[grp]['scratch_usage'])
             s2 += '%8.2e     ' % (groups[grp]['scratch_quota'])
             s3 += '%5.2f%%       ' % (100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'])
-        print(s1)
-        print(s2)
-        print(s3)
-        print()
-    
-    return
+        ll.append(s1)
+        ll.append(s2)
+        ll.append(s3)
+        ll.append()
+        
+    if do_print:
+        for l in ll:
+            print(l)
+        return
+    else:
+        return ll
 
 ###################################################################################################
 
 def getTimes():
 
+    def quarterStartDate(year, quarter):
+        
+        return datetime.date.fromisoformat('%4d-%02d-01' % (year, ((quarter - 1) * 3 + 1)))
+
     # Get current year and month    
-    date_today = date.today()
+    date_today = datetime.date.today()
     yr = date_today.year
     mth = date_today.month
     
@@ -111,7 +127,7 @@ def getTimes():
         q_yr = 2
     else:
         q_yr = 1
-    q_start = date.fromisoformat('%4d-%02d-01' % (yr, ((q_yr - 1) * 3 + 1)))
+    q_start = quarterStartDate(yr, q_yr)
     q_all = (yr - first_quarter_year) * 4 + (q_yr - first_quarter_idx)
 
     # Determine days since beginning of quarter
@@ -122,8 +138,22 @@ def getTimes():
     p = len(cfg.periods) - 1
     while cfg.periods[p]['start_day'] > d:
         p -= 1
+        
+    # Determine first and last date of period
+    time_delta = datetime.timedelta(days = cfg.periods[p]['start_day'])
+    p_start = q_start + time_delta
+    if p == len(cfg.periods) - 1:
+        if q_yr == 4:
+            q_start_next = quarterStartDate(yr + 1, 1)
+        else:
+            q_start_next = quarterStartDate(yr, q_yr + 1)
+        time_delta = datetime.timedelta(days = -1)
+        p_end = q_start_next + time_delta
+    else:
+        time_delta = datetime.timedelta(days = cfg.periods[p + 1]['start_day'] - cfg.periods[p]['start_day'] - 1)
+        p_end = q_start + time_delta
     
-    return yr, q_yr, q_all, p, d
+    return yr, q_yr, q_all, p, d, p_start, p_end
 
 ###################################################################################################
 

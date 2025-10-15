@@ -123,10 +123,10 @@ groups['qye-prj']      = {'lead': 'qye'}
 # oversubscription factor.
 
 periods = OrderedDict()
-periods[0] = {'start_day': 0,  'alloc_frac': 0.5}
-periods[1] = {'start_day': 30, 'alloc_frac': 0.9}
-periods[2] = {'start_day': 60, 'alloc_frac': 2.0}
-periods[3] = {'start_day': 80, 'alloc_frac': None}
+periods[0] = {'start_day': 0,  'alloc_frac': 0.5,  'label': '1st'}
+periods[1] = {'start_day': 30, 'alloc_frac': 0.9,  'label': '2nd'}
+periods[2] = {'start_day': 60, 'alloc_frac': 2.0,  'label': '3rd'}
+periods[3] = {'start_day': 80, 'alloc_frac': None, 'label': 'final'}
 
 n_periods = len(periods)
 
