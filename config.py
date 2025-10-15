@@ -37,14 +37,12 @@ email_dir_draft = 'emails_draft/'
 email_dir_sent = 'emails_sent/'
 
 ###################################################################################################
-# PICKLE STORAGE
+# STORAGE
 ###################################################################################################
 
-# The pickle protocol should be fixed to make it exchangeable between machines
-pickle_protocol = 5
-pickle_dir = 'pickles/'
-pickle_file_cfg = '%s/current_config.yaml' % (pickle_dir)
-pickle_file_grps_cur = '%s/groups_current.yaml' % (pickle_dir)
+yaml_dir = 'yaml'
+yaml_file_cfg = '%s/current_config.yaml' % (yaml_dir)
+yaml_file_grps_cur = '%s/groups_current.yaml' % (yaml_dir)
 
 ###################################################################################################
 # USER CATEGORIES

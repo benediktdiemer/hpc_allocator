@@ -188,7 +188,7 @@ def getSizeFromString(num_str, unit_str):
 
 ###################################################################################################
 
-def getPickleNameQuarter(q_all, yr, q_yr, previous = False):
+def getYamlNameQuarter(q_all, yr, q_yr, previous = False):
 
     if previous:
        
@@ -198,10 +198,10 @@ def getPickleNameQuarter(q_all, yr, q_yr, previous = False):
         else:
             yr_use = yr
             q_yr_use = q_yr - 1
-        pickle_file_quarter = '%s/quarter_%02d_%04d_%d.pkl' % (cfg.pickle_dir, q_all - 1, yr_use, q_yr_use)
+        yaml_file_quarter = '%s/quarter_%02d_%04d_%d.yaml' % (cfg.yaml_dir, q_all - 1, yr_use, q_yr_use)
     else:
-        pickle_file_quarter = '%s/quarter_%02d_%04d_%d.pkl' % (cfg.pickle_dir, q_all, yr, q_yr)
+        yaml_file_quarter = '%s/quarter_%02d_%04d_%d.yaml' % (cfg.yaml_dir, q_all, yr, q_yr)
     
-    return pickle_file_quarter
+    return yaml_file_quarter
 
 ###################################################################################################

@@ -10,7 +10,6 @@ import sys
 import argparse
 import subprocess
 import copy
-#import pickle
 import os
 import yaml
 
@@ -100,13 +99,10 @@ def checkStatus(verbose = False):
     # Date config: Compute date, quarter, period; check for changes
     
     print('Setting overall config...')
-    if os.path.exists(cfg.pickle_file_cfg):
-        
-        pFile = open(cfg.pickle_file_cfg, 'rb')
-        #dic_cfg = pickle.load(pFile)
-        dic_cfg = yaml.load(pFile)
+    if os.path.exists(cfg.yaml_file_cfg):
+        pFile = open(cfg.yaml_file_cfg, 'r')
+        dic_cfg = yaml.safe_load(pFile)
         pFile.close()
-        
         prev_q_all = dic_cfg['prev_q_all']
         prev_p = dic_cfg['prev_p']
         prev_d = dic_cfg['prev_d']
@@ -127,14 +123,13 @@ def checkStatus(verbose = False):
     # Group data
 
     print('Setting group data...')
-    grp_file_found = os.path.exists(cfg.pickle_file_grps_cur)
+    grp_file_found = os.path.exists(cfg.yaml_file_grps_cur)
 
     if (new_period or new_day or (not grp_file_found)):
         if grp_file_found:
             print('    Updating current group data...')
-            pFile = open(cfg.pickle_file_grps_cur, 'rb')
-            dic_grps_prev = yaml.load(pFile)
-            #dic_grps_prev = pickle.load(pFile)
+            pFile = open(cfg.yaml_file_grps_cur, 'r')
+            dic_grps_prev = yaml.safe_load(pFile)
             pFile.close()
             grps_prev = dic_grps_prev['grps_cur']               
         else:
@@ -145,16 +140,9 @@ def checkStatus(verbose = False):
         print('    Saving current group data to file...')
         dic_grps = {}
         dic_grps['grps_cur'] = grps_cur
-        
-        output_file = open(cfg.pickle_file_grps_cur, 'w')
-        #pickle.dump(dic_grps, output_file, cfg.pickle_protocol)
+        output_file = open(cfg.yaml_file_grps_cur, 'w')
         yaml.dump(dic_grps, output_file)
         output_file.close()
-        
-        f_yaml = open('output.yaml', 'w')
-        yaml.dump(dic_grps, f_yaml)
-        f_yaml.close()
-        
         if verbose:
             utils.printLine()
             print('    Current group data')
@@ -163,9 +151,8 @@ def checkStatus(verbose = False):
             utils.printLine()
     else:
         print('    Current group data already up to date, loading from file...')
-        pFile = open(cfg.pickle_file_grps_cur, 'rb')
-        #dic_grps = pickle.load(pFile)
-        dic_grps = yaml.load(pFile)
+        pFile = open(cfg.yaml_file_grps_cur, 'r')
+        dic_grps = yaml.safe_load(pFile)
         pFile.close()
         grps_cur = dic_grps['grps_cur']
 
@@ -173,12 +160,12 @@ def checkStatus(verbose = False):
     # Quarter data
 
     print('Setting quarter data...')
-    pickle_file_quarter = utils.getPickleNameQuarter(q_all, yr, q_yr)
-    found_pickle_q = os.path.exists(pickle_file_quarter)
+    yaml_file_quarter = utils.getYamlNameQuarter(q_all, yr, q_yr)
+    found_yaml_q = os.path.exists(yaml_file_quarter)
     
-    if new_quarter or not found_pickle_q:
+    if new_quarter or not found_yaml_q:
         
-        if (not new_quarter) and (not found_pickle_q):
+        if (not new_quarter) and (not found_yaml_q):
             print('    WARNING: could not find file with quarter data. Will create from scratch.')
         
         q_su_quota_astr, q_su_avail_astr = collectAllocation()
@@ -192,12 +179,11 @@ def checkStatus(verbose = False):
         dic_q['periods'] = prds
         
         # Load previous file
-        pickle_file_quarter_prev = utils.getPickleNameQuarter(q_all, yr, q_yr, previous = True)
-        found_pickle_q_prev = os.path.exists(pickle_file_quarter_prev)
-        if found_pickle_q_prev:
-            pFile = open(pickle_file_quarter_prev, 'rb')
-            #dic_q_prev = pickle.load(pFile)
-            dic_q_prev = yaml.load(pFile)
+        yaml_file_quarter_prev = utils.getYamlNameQuarter(q_all, yr, q_yr, previous = True)
+        found_yaml_q_prev = os.path.exists(yaml_file_quarter_prev)
+        if found_yaml_q_prev:
+            pFile = open(yaml_file_quarter_prev, 'r')
+            dic_q_prev = yaml.safe_load(pFile)
             pFile.close()
         else:
             print('    WARNING: Could not find data from previous quarter. Will assume this is first quarter.')
@@ -304,8 +290,7 @@ def checkStatus(verbose = False):
 
             # Write changes to previous period to file
             if (p == 0) and (dic_q_prev is not None):
-                output_file = open(pickle_file_quarter_prev, 'w')
-                #pickle.dump(dic_q_prev, output_file, cfg.pickle_protocol)
+                output_file = open(yaml_file_quarter_prev, 'w')
                 yaml.dump(dic_q_prev, output_file)
                 output_file.close()
 
@@ -318,7 +303,7 @@ def checkStatus(verbose = False):
     # If there is no new period: Usage warnings
 
     # For dry runs, we execute the following part since any new period data will not be stored in 
-    # the pickles.
+    # the yaml files.
     if (not new_period) or dry_run:
         
         print('Checking usage against allocations...')
@@ -367,20 +352,18 @@ def checkStatus(verbose = False):
     # Store changes to current quarter/period data and status
 
     # Write quarter file
-    output_file = open(pickle_file_quarter, 'w')
-    #pickle.dump(dic_q, output_file, cfg.pickle_protocol)
+    output_file = open(yaml_file_quarter, 'w')
     yaml.dump(dic_q, output_file)
     output_file.close()
 
     # Write config (after function has successfully run)
     if not dry_run:
-        print('Updating config pickle...')
+        print('Updating config yaml...')
         dic = {}
         dic['prev_q_all'] = q_all
         dic['prev_p'] = p
         dic['prev_d'] = d
-        output_file = open(cfg.pickle_file_cfg, 'w')
-        #pickle.dump(dic, output_file, cfg.pickle_protocol)
+        output_file = open(cfg.yaml_file_cfg, 'w')
         yaml.dump(dic, output_file)
         output_file.close()
     
@@ -449,9 +432,8 @@ def collectGroupData(verbose = False):
     
     # In test mode, we just load a previously determined set of group data
     if test_mode:
-        pFile = open(cfg.pickle_file_grps_cur, 'rb')
-        #dic_grps = pickle.load(pFile)
-        dic_grps = yaml.load(pFile)
+        pFile = open(cfg.yaml_file_grps_cur, 'r')
+        dic_grps = yaml.safe_load(pFile)
         pFile.close()
         grps_cur = dic_grps['grps_cur']
         return grps_cur
@@ -555,12 +537,11 @@ def collectGroupData(verbose = False):
 
 def printCurrentGroups(show_weight = True, show_su = True, show_scratch = True):
 
-    if not os.path.exists(cfg.pickle_file_grps_cur):
-        raise Exception('Could not find pickle file for current groups.')
+    if not os.path.exists(cfg.yaml_file_grps_cur):
+        raise Exception('Could not find yaml file for current groups.')
 
-    pFile = open(cfg.pickle_file_grps_cur, 'rb')
-    #dic_grps_prev = pickle.load(pFile)
-    dic_grps_prev = yaml.load(pFile)
+    pFile = open(cfg.yaml_file_grps_cur, 'r')
+    dic_grps_prev = yaml.safe_load(pFile)
     pFile.close()
 
     utils.printGroupData(dic_grps_prev['grps_cur'], show_weight = show_weight, 
