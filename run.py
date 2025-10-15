@@ -146,7 +146,7 @@ def checkStatus(verbose = False):
         dic_grps = {}
         dic_grps['grps_cur'] = grps_cur
         
-        output_file = open(cfg.pickle_file_grps_cur, 'wb')
+        output_file = open(cfg.pickle_file_grps_cur, 'w')
         #pickle.dump(dic_grps, output_file, cfg.pickle_protocol)
         yaml.dump(dic_grps, output_file)
         output_file.close()
@@ -304,7 +304,7 @@ def checkStatus(verbose = False):
 
             # Write changes to previous period to file
             if (p == 0) and (dic_q_prev is not None):
-                output_file = open(pickle_file_quarter_prev, 'wb')
+                output_file = open(pickle_file_quarter_prev, 'w')
                 #pickle.dump(dic_q_prev, output_file, cfg.pickle_protocol)
                 yaml.dump(dic_q_prev, output_file)
                 output_file.close()
@@ -367,7 +367,7 @@ def checkStatus(verbose = False):
     # Store changes to current quarter/period data and status
 
     # Write quarter file
-    output_file = open(pickle_file_quarter, 'wb')
+    output_file = open(pickle_file_quarter, 'w')
     #pickle.dump(dic_q, output_file, cfg.pickle_protocol)
     yaml.dump(dic_q, output_file)
     output_file.close()
@@ -379,7 +379,7 @@ def checkStatus(verbose = False):
         dic['prev_q_all'] = q_all
         dic['prev_p'] = p
         dic['prev_d'] = d
-        output_file = open(cfg.pickle_file_cfg, 'wb')
+        output_file = open(cfg.pickle_file_cfg, 'w')
         #pickle.dump(dic, output_file, cfg.pickle_protocol)
         yaml.dump(dic, output_file)
         output_file.close()
