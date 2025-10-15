@@ -48,7 +48,8 @@ def messageNewPeriodLead(p, prd_data, groups, grp, do_send = False):
     content += ' If that is incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
     content += '\n'
     content += '\n'
-    ll = utils.printGroupData(groups, only_grp = grp, show_scratch = False, do_print = False)
+    ll = utils.printGroupData(groups, w_tot = prd_data['w_tot'],
+                              only_grp = grp, show_scratch = False, do_print = False)
     for l in ll:
         content += l + '\n'
 

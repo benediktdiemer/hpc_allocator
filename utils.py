@@ -91,8 +91,8 @@ def printGroupData(groups, w_tot = None,
             s3 += '         '
         if show_weight:
             s1 += '%5.2f     ' % (groups[grp]['weight'])
-            s2 += '%5.2f     ' % (groups['w_tot'])
-            s3 += '%4.1f%%       ' % (100.0 * groups[grp]['weight'] / groups['w_tot'])
+            s2 += '%5.2f     ' % (w_tot)
+            s3 += '%4.1f%%       ' % (100.0 * groups[grp]['weight'] / w_tot)
         if show_su:
             s1 += '%8.2e     ' % (groups[grp]['su_usage'])
             s2 += '%8.2e     ' % (groups[grp]['su_quota'])
