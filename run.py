@@ -516,17 +516,18 @@ def collectGroupData(verbose = False):
             
             # Get user details from known users if possible. Weight may or may not have been set.
             weight = None
+            user_active = True
             if usr in known_users:
                 ptype = known_users[usr]['people_type']
                 past_user = known_users[usr]['past_user']
-                user_active = known_users[usr]['active']
+                if 'active' in known_users[usr]:
+                    user_active = known_users[usr]['active']
                 if 'weight' in known_users[usr]:
                     weight = known_users[usr]['weight']
             else:
                 print('WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
                 ptype = 'tbd'
                 past_user = False
-                user_active = True
             
             # If weight has not been set explicitly, make it zero for past users and dependent on 
             # people type otherwise.
