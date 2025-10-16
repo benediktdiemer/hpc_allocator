@@ -58,10 +58,10 @@ def printGroupData(groups, w_tot = None,
             s1 += 'Weight   '
             s2 += '---------'
         if show_su:
-            s1 += 'SU           '
+            s1 += 'kSU          '
             s2 += '-------------'
         if show_scratch:
-            s1 += 'Scratch      '
+            s1 += 'Scratch (GB) '
             s2 += '-------------'
         ll.append(s1)
         ll.append(s2)
@@ -78,9 +78,9 @@ def printGroupData(groups, w_tot = None,
             if show_weight:
                 s1 += '%.2f     ' % (groups[grp]['users'][usr]['weight'])
             if show_su:
-                s1 += '%8.2e     ' % (groups[grp]['users'][usr]['su_usage'])
+                s1 += '%8.1f     ' % (groups[grp]['users'][usr]['su_usage'] / 1000.0)
             if show_scratch:
-                s1 += '%8.2e     ' % (groups[grp]['users'][usr]['scratch_usage'])
+                s1 += '%8.1f     ' % (groups[grp]['users'][usr]['scratch_usage'])
             ll.append(s1)
 
         ll.append(s2)
@@ -88,21 +88,25 @@ def printGroupData(groups, w_tot = None,
         s2 = '    AVAILABLE  '
         s3 = '    FRACTION   '
         if show_pos:
-            s1 += '         '
-            s2 += '         '
-            s3 += '         '
+            s1 += '          '
+            s2 += '          '
+            s3 += '          '
         if show_weight:
-            s1 += '%5.2f     ' % (groups[grp]['weight'])
-            s2 += '%5.2f     ' % (w_tot)
-            s3 += '%4.1f%%       ' % (100.0 * groups[grp]['weight'] / w_tot)
+            s1 += '%5.2f    ' % (groups[grp]['weight'])
+            s2 += '%5.2f    ' % (w_tot)
+            s3 += '%4.1f%%    ' % (100.0 * groups[grp]['weight'] / w_tot)
         if show_su:
-            s1 += '%8.2e     ' % (groups[grp]['su_usage'])
-            s2 += '%8.2e     ' % (groups[grp]['su_quota'])
-            s3 += '%5.2f%%       ' % (100.0 * groups[grp]['su_usage'] / groups[grp]['su_quota'])
+            s1 += '%8.1f     ' % (groups[grp]['su_usage'] / 1000.0)
+            if 'alloc' in groups[grp]:
+                s2 += '%8.1f     ' % (groups[grp]['alloc'] / 1000.0)
+                s3 += '  %5.1f%%     ' % (100.0 * groups[grp]['su_usage'] / groups[grp]['alloc'])
+            else:
+                s2 += '             '
+                s3 += '             '
         if show_scratch:
-            s1 += '%8.2e     ' % (groups[grp]['scratch_usage'])
-            s2 += '%8.2e     ' % (groups[grp]['scratch_quota'])
-            s3 += '%5.2f%%       ' % (100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'])
+            s1 += '%8.1f     ' % (groups[grp]['scratch_usage'])
+            s2 += '%8.1f     ' % (groups[grp]['scratch_quota'])
+            s3 += '  %5.1f%%     ' % (100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'])
         ll.append(s1)
         ll.append(s2)
         ll.append(s3)

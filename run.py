@@ -214,10 +214,15 @@ def checkStatus(verbose = False):
                 prd_old = {}
                 prd_old['groups'] = {}
         
-        # Compute total weight
+        # Add groups to period
         for grp in grps_cur:
             prd_new['groups'][grp] = {}
-            prd_new['groups'][grp]['weight'] = grps_cur[grp]['weight']
+            for k in grps_cur[grp].keys():
+                if k in ['users', 'su_usage', 'su_quota']:
+                    continue
+                prd_new['groups'][grp][k] = grps_cur[grp][k]
+
+        # Compute total weight
         w_tot_cur = utils.getTotalWeight(grps_cur)
         prd_new['w_tot'] = w_tot_cur
 
@@ -240,9 +245,10 @@ def checkStatus(verbose = False):
             prd_new['groups'][grp]['users'] = {}
             for usr in grps_cur[grp]['users']:
                 prd_new['groups'][grp]['users'][usr] = {}
-                prd_new['groups'][grp]['users'][usr]['people_type'] = grps_cur[grp]['users'][usr]['people_type']
-                prd_new['groups'][grp]['users'][usr]['past_user'] = grps_cur[grp]['users'][usr]['past_user']  
-                prd_new['groups'][grp]['users'][usr]['active'] = grps_cur[grp]['users'][usr]['active']  
+                for k in grps_cur[grp]['users'][usr].keys():
+                    if k == 'su_usage':
+                        continue
+                    prd_new['groups'][grp]['users'][usr][k] = grps_cur[grp]['users'][usr][k]
 
             # Compute cumulative usage in the previous period. If this is a new quarter, the usage 
             # has been reset to zero and we need to use the previous group data. This technically 
@@ -325,7 +331,7 @@ def checkStatus(verbose = False):
             # Send out email with allocation details, oversubscription warning, usage in previous 
             # period, penalties if applicable, and so on to the lead. The members receive a 
             # simplified version that does not state how the allocation was computed.
-            messaging.messageNewPeriod(prd_new, p, grps_cur, grp, do_send = (not dry_run))
+            messaging.messageNewPeriod(prd_new, p, grp, do_send = (not dry_run))
 
     # ---------------------------------------------------------------------------------------------
     # If there is no new period: Usage warnings
@@ -348,18 +354,20 @@ def checkStatus(verbose = False):
             grp_su_usage_new = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
             prd_cur['groups'][grp]['su_usage'] = grp_su_usage_new
             
+            # Update HDD data
+            prd_cur['groups'][grp]['scratch_usage'] = grps_cur[grp]['scratch_usage']
+            prd_cur['groups'][grp]['scratch_quota'] = grps_cur[grp]['scratch_quota']
+            
             # Update individual user data. If a user doesn't exist in the period yet, they were 
             # presumably just added. 
             for usr in grps_cur[grp]['users']:
                 if not usr in prd_cur['groups'][grp]['users']:
                     print('    Adding user %s to group %s.' % (usr, grp))
                     prd_cur['groups'][grp]['users'][usr] = {}
-                    prd_cur['groups'][grp]['users'][usr]['people_type'] = grps_cur[grp]['users'][usr]['people_type']
-                    prd_cur['groups'][grp]['users'][usr]['past_user'] = grps_cur[grp]['users'][usr]['past_user']
-                    prd_cur['groups'][grp]['users'][usr]['active'] = grps_cur[grp]['users'][usr]['active']
+                    for k in grps_cur[grp]['users'][usr].keys():
+                        prd_cur['groups'][grp]['users'][usr][k] = grps_cur[grp]['users'][usr][k]
                     prd_cur['groups'][grp]['users'][usr]['su_usage_start'] = 0.0
                     prd_cur['groups'][grp]['users'][usr]['su_usage'] = 0.0
-                #usr_su_usage_old = prd_cur['groups'][grp]['users'][usr]['su_usage']
                 usr_su_usage_new = grps_cur[grp]['users'][usr]['su_usage'] - prd_cur['groups'][grp]['users'][usr]['su_usage_start']
                 prd_cur['groups'][grp]['users'][usr]['su_usage'] = usr_su_usage_new
             
@@ -378,7 +386,7 @@ def checkStatus(verbose = False):
                     for ii in range(len(cfg.warning_levels)):
                         i = len(cfg.warning_levels) - ii - 1
                         if (usage_prct_new > cfg.warning_levels[i]) and (usage_prct_old <= cfg.warning_levels[i]):
-                            messaging.messageUsageWarning(prd_cur, grps_cur, grp, i, do_send = (not dry_run))
+                            messaging.messageUsageWarning(prd_cur, grp, i, do_send = (not dry_run))
                             warned_level = i
                             break
                 s = '    Group %-15s allocation %6.1f kSU, usage %6.1f -> %6.1f kSU, fraction %5.1f -> %5.1f%%' \
@@ -389,7 +397,7 @@ def checkStatus(verbose = False):
                 print(s)
             else:
                 if grp_su_usage_new > grp_su_usage_old + 1.0:
-                    messaging.messageUsageWarning(prd_cur, grps_cur, grp, None, do_send = (not dry_run))
+                    messaging.messageUsageWarning(prd_cur, grp, None, do_send = (not dry_run))
 
     # ---------------------------------------------------------------------------------------------
     # Store changes to current quarter/period data and status

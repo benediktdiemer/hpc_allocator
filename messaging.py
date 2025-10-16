@@ -38,7 +38,7 @@ def testMessage(do_send = False):
 # This message is sent to the lead and all members at the beginning of a new period. Only the lead
 # sees how the weight is computed.
 
-def messageNewPeriod(prd_data, p, grp_data, grp, do_send = False):
+def messageNewPeriod(prd_data, p, grp, do_send = False):
     
     subject = '%s New allocation period' % (subject_prefix)
 
@@ -53,7 +53,7 @@ def messageNewPeriod(prd_data, p, grp_data, grp, do_send = False):
     content += ' If that is incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
     content += '\n'
     content += '\n'
-    ll = utils.printGroupData(prd_data, w_tot = prd_data['w_tot'],
+    ll = utils.printGroupData(prd_data['groups'], w_tot = prd_data['w_tot'],
                                   only_grp = grp, show_su = False, show_scratch = False, do_print = False)
     for i in range(len(ll)):
         if i == 0:
@@ -78,7 +78,7 @@ def messageNewPeriod(prd_data, p, grp_data, grp, do_send = False):
     
     # Send
     recipients = ''
-    for usr in grp_data[grp]['users'].keys():
+    for usr in prd_data['groups'][grp]['users'].keys():
         recipients += '%s@umd.edu, ' % (usr)
     recipients = recipients[:-2]
     sendMessage(recipients, subject, content, do_send = do_send, verbose = True, recipient_label = grp)
@@ -87,7 +87,7 @@ def messageNewPeriod(prd_data, p, grp_data, grp, do_send = False):
 
 ###################################################################################################
 
-def messageUsageWarning(prd_data, grp_data, grp, warn_idx, do_send = False):
+def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
 
     zero_alloc = (prd_data['groups'][grp]['alloc'] <= 0.0)
     if not zero_alloc:
@@ -109,6 +109,17 @@ def messageUsageWarning(prd_data, grp_data, grp, warn_idx, do_send = False):
     content += "Remaining:                                   %7.1f kSU\n" \
         % (prd_data['groups'][grp]['alloc'] / 1000.0 - prd_data['groups'][grp]['su_usage'] / 1000.0)
     content += '\n'
+    content += 'The following table shows the consumption of SUs (and scratch space) by user:'
+    content += '\n'
+    content += '\n'
+
+    ll = utils.printGroupData(prd_data['groups'], w_tot = prd_data['w_tot'],
+                                  only_grp = grp, show_weight = False, do_print = False)
+    for i in range(len(ll)):
+        if i == 0:
+            continue
+        content += ll[i] + '\n'
+    
     content += "The current allocation period runs from %s to %s." \
         % (prd_data['start_date'].strftime('%Y/%m/%d'), prd_data['end_date'].strftime('%Y/%m/%d'))
     
@@ -124,7 +135,7 @@ def messageUsageWarning(prd_data, grp_data, grp, warn_idx, do_send = False):
     
     # Send
     recipients = ''
-    for usr in grp_data[grp]['users'].keys():
+    for usr in prd_data['groups'][grp]['users'].keys():
         recipients += '%s@umd.edu, ' % (usr)
     recipients = recipients[:-2]
     sendMessage(recipients, subject, content, do_send = do_send, verbose = True, recipient_label = grp)
