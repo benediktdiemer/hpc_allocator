@@ -70,6 +70,8 @@ def printGroupData(groups, w_tot = None,
             if show_pos:
                 if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
                     str_previous = 'x'
+                elif ('past_user' in groups[grp]['users'][usr]) and (not groups[grp]['users'][usr]['active']):
+                    str_previous = 'i'
                 else:
                     str_previous = ' '
                 s1 += '%-3s  %s   ' % (groups[grp]['users'][usr]['people_type'], str_previous)

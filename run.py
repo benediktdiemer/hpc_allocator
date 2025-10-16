@@ -242,6 +242,7 @@ def checkStatus(verbose = False):
                 prd_new['groups'][grp]['users'][usr] = {}
                 prd_new['groups'][grp]['users'][usr]['people_type'] = grps_cur[grp]['users'][usr]['people_type']
                 prd_new['groups'][grp]['users'][usr]['past_user'] = grps_cur[grp]['users'][usr]['past_user']  
+                prd_new['groups'][grp]['users'][usr]['active'] = grps_cur[grp]['users'][usr]['active']  
 
             # Compute cumulative usage in the previous period. If this is a new quarter, the usage 
             # has been reset to zero and we need to use the previous group data. This technically 
@@ -339,17 +340,28 @@ def checkStatus(verbose = False):
             
             # The group could have been added after the period was created.
             if not grp in prd_cur['groups']:
-                print('WARNING: Could not find group "%s" in current period.' % (grp))
+                print('    WARNING: Could not find group "%s" in current period.' % (grp))
                 continue
         
             # Update SU usage from cumulative
-            su_usage_old = prd_cur['groups'][grp]['su_usage']
-            su_usage_new = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
-            prd_cur['groups'][grp]['su_usage'] = su_usage_new
+            grp_su_usage_old = prd_cur['groups'][grp]['su_usage']
+            grp_su_usage_new = grps_cur[grp]['su_usage'] - prd_cur['groups'][grp]['su_usage_start']
+            prd_cur['groups'][grp]['su_usage'] = grp_su_usage_new
             
-            # Update individual user data
-            
-            # TODO
+            # Update individual user data. If a user doesn't exist in the period yet, they were 
+            # presumably just added. 
+            for usr in grps_cur[grp]['users']:
+                if not usr in prd_cur['groups'][grp]['users']:
+                    print('    Adding user %s to group %s.' % (usr, grp))
+                    prd_cur['groups'][grp]['users'][usr] = {}
+                    prd_cur['groups'][grp]['users'][usr]['people_type'] = grps_cur[grp]['users'][usr]['people_type']
+                    prd_cur['groups'][grp]['users'][usr]['past_user'] = grps_cur[grp]['users'][usr]['past_user']
+                    prd_cur['groups'][grp]['users'][usr]['active'] = grps_cur[grp]['users'][usr]['active']
+                    prd_cur['groups'][grp]['users'][usr]['su_usage_start'] = 0.0
+                    prd_cur['groups'][grp]['users'][usr]['su_usage'] = 0.0
+                #usr_su_usage_old = prd_cur['groups'][grp]['users'][usr]['su_usage']
+                usr_su_usage_new = grps_cur[grp]['users'][usr]['su_usage'] - prd_cur['groups'][grp]['users'][usr]['su_usage_start']
+                prd_cur['groups'][grp]['users'][usr]['su_usage'] = usr_su_usage_new
             
             # Compute fraction of allocation and warn users if necessary. In the case where a 
             # group has a finite allocation, we check for fractions that exceed a warning level 
@@ -359,10 +371,10 @@ def checkStatus(verbose = False):
             # email every time the absolute usage has changed.
             su_alloc = prd_cur['groups'][grp]['alloc']
             if su_alloc > 0.0:
-                usage_prct_old = su_usage_old / su_alloc * 100.0
-                usage_prct_new = su_usage_new / su_alloc * 100.0
+                usage_prct_old = grp_su_usage_old / su_alloc * 100.0
+                usage_prct_new = grp_su_usage_new / su_alloc * 100.0
                 warned_level = -1
-                if su_usage_new > 0.0:
+                if grp_su_usage_new > 0.0:
                     for ii in range(len(cfg.warning_levels)):
                         i = len(cfg.warning_levels) - ii - 1
                         if (usage_prct_new > cfg.warning_levels[i]) and (usage_prct_old <= cfg.warning_levels[i]):
@@ -370,13 +382,13 @@ def checkStatus(verbose = False):
                             warned_level = i
                             break
                 s = '    Group %-15s allocation %6.1f kSU, usage %6.1f -> %6.1f kSU, fraction %5.1f -> %5.1f%%' \
-                      % (grp, su_alloc / 1000.0, su_usage_old / 1000.0, su_usage_new / 1000.0, 
+                      % (grp, su_alloc / 1000.0, grp_su_usage_old / 1000.0, grp_su_usage_new / 1000.0, 
                          usage_prct_old, usage_prct_new)
                 if warned_level >= 0:
                     s += ' (%d%% warning)' % (cfg.warning_levels[warned_level])
                 print(s)
             else:
-                if su_usage_new > su_usage_old + 1.0:
+                if grp_su_usage_new > grp_su_usage_old + 1.0:
                     messaging.messageUsageWarning(prd_cur, grps_cur, grp, None, do_send = (not dry_run))
 
     # ---------------------------------------------------------------------------------------------
@@ -437,7 +449,7 @@ def collectUserData(verbose = False):
         f.close()
         for l in ll:
             uid = (l.split('@')[0]).lower()
-            users[uid] = {'people_type': ptype, 'past_user': False}
+            users[uid] = {'people_type': ptype, 'past_user': False, 'active': True}
     
     users.update(cfg.users_extra)
     
@@ -507,12 +519,14 @@ def collectGroupData(verbose = False):
             if usr in known_users:
                 ptype = known_users[usr]['people_type']
                 past_user = known_users[usr]['past_user']
+                user_active = known_users[usr]['active']
                 if 'weight' in known_users[usr]:
                     weight = known_users[usr]['weight']
             else:
                 print('WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
                 ptype = 'tbd'
                 past_user = False
+                user_active = True
             
             # If weight has not been set explicitly, make it zero for past users and dependent on 
             # people type otherwise.
@@ -523,6 +537,7 @@ def collectGroupData(verbose = False):
                     weight = cfg.people_types[ptype]['weight']
             groups[grp]['users'][usr]['people_type'] = ptype
             groups[grp]['users'][usr]['past_user'] = past_user
+            groups[grp]['users'][usr]['active'] = user_active
             groups[grp]['users'][usr]['weight'] = weight
             groups[grp]['users'][usr]['su_usage'] = 0.0
             
