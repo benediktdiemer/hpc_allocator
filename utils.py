@@ -121,14 +121,17 @@ def printGroupData(groups, w_tot = None,
 
 ###################################################################################################
 
-def getTimes():
+def getTimes(days_future = 0):
 
     def quarterStartDate(year, quarter):
         
         return datetime.date.fromisoformat('%4d-%02d-01' % (year, ((quarter - 1) * 3 + 1)))
 
-    # Get current year and month    
+    # Get current year and month
     date_today = datetime.date.today()
+    if days_future != 0:
+        time_delta = datetime.timedelta(days = days_future)
+        date_today += time_delta
     yr = date_today.year
     mth = date_today.month
     

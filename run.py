@@ -41,20 +41,22 @@ def main():
     parser.add_argument('-mode', type = str, default = 'check', help = 'Operation, can be check, groupinfo, userlist, or emailtest')
     parser.add_argument('-test', default = False, action = 'store_true', help = 'Test mode, means not run on cluster')
     parser.add_argument('-action', default = False, action = 'store_true', help = 'If true, script is live and emails are sent')
+    parser.add_argument('-future', type = int, default = 0, help = 'Run the script as if the date was shifted by this many days')
 
     args = parser.parse_args()
     mode = args.mode
     test_mode = args.test
     dry_run = (not args.action)
+    future = args.future
 
     utils.printLine()
     print('Welcome to the HPC Allocator')
     utils.printLine()
-    print('Settings: operation = %s, test_mode = %s, dry_run = %s.' \
-          % (mode, str(test_mode), str(dry_run)))
+    print('Settings: operation = %s, test_mode = %s, dry_run = %s, days in future = %d.' \
+          % (mode, str(test_mode), str(dry_run), future))
     
     if mode == 'check':
-        checkStatus()
+        checkStatus(days_future = future)
     elif mode == 'groupinfo':
         printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
     elif mode == 'userlist':
@@ -82,7 +84,7 @@ def main():
 #   - Send out allocations for this period to all group members
 # - If not new quarter / period, check for usage close to allocation
 
-def checkStatus(verbose = False):
+def checkStatus(days_future = 0, verbose = False):
 
     # ---------------------------------------------------------------------------------------------
     # Date config: Compute date, quarter, period; check for changes
@@ -101,7 +103,7 @@ def checkStatus(verbose = False):
         prev_d = -1
         print('    WARNING: found no previous config. Re-setting variables.')
         
-    yr, q_yr, q_all, p, d, p_start, p_end = utils.getTimes()
+    yr, q_yr, q_all, p, d, p_start, p_end = utils.getTimes(days_future = days_future)
     new_quarter = (prev_q_all != q_all)
     new_period = (prev_p != p)
     new_day = (prev_d != d)
@@ -129,9 +131,10 @@ def checkStatus(verbose = False):
         print('    Saving current group data to file...')
         dic_grps = {}
         dic_grps['grps_cur'] = grps_cur
-        output_file = open(cfg.yaml_file_grps_cur, 'w')
-        yaml.dump(dic_grps, output_file)
-        output_file.close()
+        if not dry_run:
+            output_file = open(cfg.yaml_file_grps_cur, 'w')
+            yaml.dump(dic_grps, output_file)
+            output_file.close()
         if verbose:
             utils.printLine()
             print('    Current group data')
@@ -175,7 +178,8 @@ def checkStatus(verbose = False):
             dic_q_prev = yaml.safe_load(pFile)
             pFile.close()
         else:
-            print('    WARNING: Could not find data from previous quarter. Will assume this is first quarter.')
+            print('    WARNING: Could not find data from previous quarter (%s). Will assume this is first quarter.' \
+                  % (yaml_file_quarter_prev))
             dic_q_prev = None  
     
     else:
@@ -320,7 +324,7 @@ def checkStatus(verbose = False):
             prd_new['groups'][grp]['penalty_new'] = penalty_new
 
             # Write changes to previous period to file
-            if (p == 0) and (dic_q_prev is not None):
+            if (p == 0) and (dic_q_prev is not None) and (not dry_run):
                 output_file = open(yaml_file_quarter_prev, 'w')
                 yaml.dump(dic_q_prev, output_file)
                 output_file.close()
