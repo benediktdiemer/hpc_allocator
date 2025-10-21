@@ -130,6 +130,7 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
         content += " Please carefully keep track of your group's usage."
         content += " You will receive another warning email when your group's usage exceeds %d percent of this period's allocation." \
             % (cfg.warning_levels[warn_idx + 1])
+        content += " For any other questions regarding our allocation system or Zaratan in general, please see the astro wiki at https://wiki.astro.umd.edu/computing/zaratan."
     
     content += email_end
     
@@ -148,7 +149,7 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
 # email.
 
 def sendMessage(recipients, subject, content, recipient_label = None, 
-                do_send = False, safe_mode = True, verbose = False):
+                do_send = False, safe_mode = False, verbose = False):
     
     do_send = do_send and ((not safe_mode) or (recipient_label == 'diemer-prj'))
         
@@ -170,9 +171,6 @@ def sendMessage(recipients, subject, content, recipient_label = None,
     f.write('\n\n')
     f.write(content)
     f.close()
-    
-    # TODO
-    #return
     
     if do_send:
 

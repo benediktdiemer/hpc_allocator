@@ -76,7 +76,7 @@ def printGroupData(groups, w_tot = None,
                     str_previous = ' '
                 s1 += '%-3s  %s   ' % (groups[grp]['users'][usr]['people_type'], str_previous)
             if show_weight:
-                s1 += '%.2f     ' % (groups[grp]['users'][usr]['weight'])
+                s1 += ' %.2f    ' % (groups[grp]['users'][usr]['weight'])
             if show_su:
                 s1 += '%8.1f     ' % (groups[grp]['users'][usr]['su_usage'] / 1000.0)
             if show_scratch:

@@ -30,6 +30,7 @@ parser.read('email.cfg')
 sender_email = parser['login']['email']
 sender_password = parser['login']['password']
 test_email = parser['login']['test_email']
+admin_user = sender_email.split('@')[0]
 
 # If we are in dry run mode, output emails as text files into this directory
 

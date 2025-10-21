@@ -45,7 +45,7 @@ def main():
     else:
     
         parser = argparse.ArgumentParser(description = 'Welcome to the HPC allocator.')
-        parser.add_argument('-mode', type = str, default = 'check', help = 'Operation, can be check, groupinfo, or emailtest')
+        parser.add_argument('-mode', type = str, default = 'check', help = 'Operation, can be check, groupinfo, userlist, or emailtest')
         parser.add_argument('-test', default = False, action = 'store_true', help = 'Test mode, means not run on cluster')
         parser.add_argument('-action', default = False, action = 'store_true', help = 'If true, script is live and emails are sent')
     
@@ -63,6 +63,8 @@ def main():
             checkStatus()
         elif args.mode == 'groupinfo':
             printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
+        elif args.mode == 'userlist':
+            printUserEmails()
         elif args.mode == 'emailtest':
             messaging.testMessage(do_send = True)
         else:
@@ -591,18 +593,47 @@ def collectGroupData(verbose = False):
 
 ###################################################################################################
 
-def printCurrentGroups(show_weight = True, show_su = True, show_scratch = True):
+def getGroupDataFromFile():
 
     if not os.path.exists(cfg.yaml_file_grps_cur):
         raise Exception('Could not find yaml file for current groups.')
 
     pFile = open(cfg.yaml_file_grps_cur, 'r')
-    dic_grps_prev = yaml.safe_load(pFile)
+    dic_grps = yaml.safe_load(pFile)
     pFile.close()
+    
+    return dic_grps
 
-    utils.printGroupData(dic_grps_prev['grps_cur'], show_weight = show_weight, 
+###################################################################################################
+
+def printCurrentGroups(show_weight = True, show_su = True, show_scratch = True):
+
+    dic_grps = getGroupDataFromFile()
+    utils.printGroupData(dic_grps['grps_cur'], show_weight = show_weight, 
                    show_su = show_su, show_scratch = show_scratch)
-               
+            
+    return
+
+###################################################################################################
+
+def printUserEmails(include_admin = False, make_email = True):
+    
+    dic_grps = getGroupDataFromFile()
+    grps = dic_grps['grps_cur']
+    all_users = []
+    for grp in grps:
+        for usr in grps[grp]['users']:
+            all_users.append(usr)
+    all_users = list(set(all_users))
+    all_users.sort()
+    if not include_admin:
+        all_users.remove(cfg.admin_user)
+    for usr in all_users:
+        if make_email:
+            print('%s@umd.edu' % usr)
+        else:
+            print(usr)
+    
     return
 
 ###################################################################################################
