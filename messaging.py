@@ -39,7 +39,7 @@ def testMessage(do_send = False):
 # This message is sent to the lead and all members at the beginning of a new period. Only the lead
 # sees how the weight is computed.
 
-def messageNewPeriod(prd_data, p, grp, do_send = False):
+def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
     
     subject = '%s New allocation period' % (subject_prefix)
 
@@ -47,9 +47,19 @@ def messageNewPeriod(prd_data, p, grp, do_send = False):
     content += 'You are receiving this email because you are a member of the user group %s.' % (grp)
     content += " We are beginning this quarter's %s allocation period, which runs from %s to %s." \
         % (cfg.periods[p]['label'], prd_data['start_date'].strftime('%Y/%m/%d'), prd_data['end_date'].strftime('%Y/%m/%d'))
-    content += '\n'
-    content += '\n'
-    content += 'The following table details the allocation that your group has received according to our distribution key.'
+
+    if grp in prd_data_prev['groups']:
+        content += " The following table shows your group's usage over the previous period (in kSU), as well as your current scratch usage (in GB):"
+        content += '\n'
+        content += '\n'
+        ll = utils.printGroupData(prd_data_prev['groups'], w_tot = prd_data_prev['w_tot'],
+                                      only_grp = grp, show_weight = False, show_pos = False, do_print = False)
+        for i in range(len(ll)):
+            if i == 0:
+                continue
+            content += ll[i] + '\n'
+    
+    content += 'The following table details the allocation that your group has received for the new period according to our distribution key.'
     content += ' An "x" means that a user is marked as being a former member of UMD astronomy.'
     content += ' If that is incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
     content += '\n'

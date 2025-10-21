@@ -333,7 +333,7 @@ def checkStatus(days_future = 0, verbose = False):
             # Send out email with allocation details, oversubscription warning, usage in previous 
             # period, penalties if applicable, and so on to the lead. The members receive a 
             # simplified version that does not state how the allocation was computed.
-            messaging.messageNewPeriod(prd_new, p, grp, do_send = (not dry_run))
+            messaging.messageNewPeriod(prd_new, prd_old, p, grp, do_send = (not dry_run))
 
     # ---------------------------------------------------------------------------------------------
     # If there is no new period: Usage warnings

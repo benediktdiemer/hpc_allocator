@@ -49,24 +49,24 @@ def printGroupData(groups, w_tot = None,
         if (only_grp is not None) and (grp != only_grp):
             continue
         ll.append('%-20s' % (grp))
-        s1 = '    User        '
-        s2 = '    ------------'
+        s1 = '    User        |'
+        s2 = '    -------------'
         if show_pos:
-            s1 += 'Pos  Ex  '
-            s2 += '---------'
+            s1 += ' Pos  Ex |'
+            s2 += '----------'
         if show_weight:
-            s1 += 'Weight   '
+            s1 += ' Weight |'
             s2 += '---------'
         if show_su:
-            s1 += 'kSU          '
-            s2 += '-------------'
+            s1 += '      kSU |'
+            s2 += '-----------'
         if show_scratch:
-            s1 += 'Scratch (GB) '
-            s2 += '-------------'
+            s1 += '  Scratch |'
+            s2 += '-----------'
         ll.append(s1)
         ll.append(s2)
         for usr in sorted(list(groups[grp]['users'].keys())):
-            s1 = '    %-12s' % (usr)
+            s1 = '    %-12s|' % (usr)
             if show_pos:
                 if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
                     str_previous = 'x'
@@ -74,39 +74,39 @@ def printGroupData(groups, w_tot = None,
                     str_previous = 'i'
                 else:
                     str_previous = ' '
-                s1 += '%-3s  %s   ' % (groups[grp]['users'][usr]['people_type'], str_previous)
+                s1 += ' %-3s  %s  |' % (groups[grp]['users'][usr]['people_type'], str_previous)
             if show_weight:
-                s1 += ' %.2f    ' % (groups[grp]['users'][usr]['weight'])
+                s1 += '  %5.2f |' % (groups[grp]['users'][usr]['weight'])
             if show_su:
-                s1 += '%8.1f     ' % (groups[grp]['users'][usr]['su_usage'] / 1000.0)
+                s1 += ' %8.1f |' % (groups[grp]['users'][usr]['su_usage'] / 1000.0)
             if show_scratch:
-                s1 += '%8.1f     ' % (groups[grp]['users'][usr]['scratch_usage'])
+                s1 += ' %8.1f |' % (groups[grp]['users'][usr]['scratch_usage'])
             ll.append(s1)
 
         ll.append(s2)
-        s1 = '    TOTAL      '
-        s2 = '    AVAILABLE  '
-        s3 = '    FRACTION   '
+        s1 = '    TOTAL       |'
+        s2 = '    AVAILABLE   |'
+        s3 = '    FRACTION    |'
         if show_pos:
-            s1 += '          '
-            s2 += '          '
-            s3 += '          '
+            s1 += '         |'
+            s2 += '         |'
+            s3 += '         |'
         if show_weight:
-            s1 += '%5.2f    ' % (groups[grp]['weight'])
-            s2 += '%5.2f    ' % (w_tot)
-            s3 += '%4.1f%%    ' % (100.0 * groups[grp]['weight'] / w_tot)
+            s1 += '  %5.2f |' % (groups[grp]['weight'])
+            s2 += '  %5.2f |' % (w_tot)
+            s3 += '  %4.1f%% |' % (100.0 * groups[grp]['weight'] / w_tot)
         if show_su:
-            s1 += '%8.1f     ' % (groups[grp]['su_usage'] / 1000.0)
+            s1 += ' %8.1f |' % (groups[grp]['su_usage'] / 1000.0)
             if 'alloc' in groups[grp]:
-                s2 += '%8.1f     ' % (groups[grp]['alloc'] / 1000.0)
-                s3 += '  %5.1f%%     ' % (100.0 * groups[grp]['su_usage'] / groups[grp]['alloc'])
+                s2 += ' %8.1f |' % (groups[grp]['alloc'] / 1000.0)
+                s3 += '   %5.1f%% |' % (100.0 * groups[grp]['su_usage'] / groups[grp]['alloc'])
             else:
-                s2 += '             '
-                s3 += '             '
+                s2 += '             |'
+                s3 += '             |'
         if show_scratch:
-            s1 += '%8.1f     ' % (groups[grp]['scratch_usage'])
-            s2 += '%8.1f     ' % (groups[grp]['scratch_quota'])
-            s3 += '  %5.1f%%     ' % (100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'])
+            s1 += ' %8.1f |' % (groups[grp]['scratch_usage'])
+            s2 += ' %8.1f |' % (groups[grp]['scratch_quota'])
+            s3 += '   %5.1f%% |' % (100.0 * groups[grp]['scratch_usage'] / groups[grp]['scratch_quota'])
         ll.append(s1)
         ll.append(s2)
         ll.append(s3)
