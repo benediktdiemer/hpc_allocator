@@ -155,15 +155,18 @@ def checkStatus(days_future = 0, verbose = False):
     yaml_file_quarter = utils.getYamlNameQuarter(q_all, yr, q_yr)
     found_yaml_q = os.path.exists(yaml_file_quarter)
     
-    if new_quarter or not found_yaml_q:
-        
-        if (not new_quarter) and (not found_yaml_q):
-            print('    WARNING: could not find file with quarter data. Will create from scratch.')
-        
+    # We need to refresh the overall usage only if we are starting a new period or if we have no 
+    # information.
+    if new_period or not found_yaml_q:
         q_su_quota_astr, q_su_avail_astr = collectAllocation()
         print('    Found overall quarter allocation of %.1f kSU, %.1f kSU remaining.' \
               % (q_su_quota_astr / 1000.0, q_su_avail_astr / 1000.0))
-        
+    
+    # If we start a new quarter, we must start a new dictionary. Otherwise, we load the info from
+    # the current dictionary file.
+    if new_quarter or not found_yaml_q:
+        if (not new_quarter) and (not found_yaml_q):
+            print('    WARNING: could not find file with quarter data. Will create from scratch.')      
         dic_q = {}
         dic_q['q_su_quota_astr'] = q_su_quota_astr
         dic_q['q_su_avail_astr'] = q_su_avail_astr
@@ -181,13 +184,12 @@ def checkStatus(days_future = 0, verbose = False):
             print('    WARNING: Could not find data from previous quarter (%s). Will assume this is first quarter.' \
                   % (yaml_file_quarter_prev))
             dic_q_prev = None  
-    
     else:
-        
         pFile = open(yaml_file_quarter, 'r')
         dic_q = yaml.safe_load(pFile)
         pFile.close()
     
+    # Shortcut for periods in current quarter
     prds = dic_q['periods']
 
     # ---------------------------------------------------------------------------------------------
@@ -266,10 +268,15 @@ def checkStatus(days_future = 0, verbose = False):
                 prd_new['groups'][grp]['su_usage_start'] = grp_su_usage_cum
             prd_new['groups'][grp]['su_usage'] = 0.0
             
-            # Update old period with final usage
+            # Update old period with final usage and set penalty, if allocation exceeded
             if grp in prd_old['groups']:
                 prd_old['groups'][grp]['su_usage'] = grp_su_usage_cum - prd_old['groups'][grp]['su_usage_start']
-            
+                penalty_old = prd_old['groups'][grp]['penalty_new']
+                if prd_old['groups'][grp]['su_usage'] > prd_old['groups'][grp]['alloc']:
+                    penalty_old += prd_old['groups'][grp]['su_usage'] - prd_old['groups'][grp]['alloc']
+            else:
+                penalty_old = 0.0
+                
             # Now repeat the process for individual users. Users could be only in the old or only 
             # in the new dataset, so we need to consider a superset of possible users and check
             # whether they are in each set.
@@ -292,12 +299,6 @@ def checkStatus(days_future = 0, verbose = False):
                 if (grp in prd_old['groups']) and (usr in prd_old['groups'][grp]['users']):
                     prd_old['groups'][grp]['users'][usr]['su_usage'] = usr_su_usage_cum - prd_old['groups'][grp]['users'][usr]['su_usage_start']
                 prd_new['groups'][grp]['users'][usr]['su_usage'] = 0.0
-                
-            # Try to find previous penalty if any
-            if grp in prd_old['groups']:
-                penalty_old = prd_old['groups'][grp]['penalty_new']
-            else:
-                penalty_old = 0.0
                 
             # Multiply penalty by penalty factor
             penalty_old *= cfg.penalty_factor

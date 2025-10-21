@@ -168,7 +168,7 @@ def getTimes(days_future = 0):
         p_end = q_start_next + time_delta
     else:
         time_delta = datetime.timedelta(days = cfg.periods[p + 1]['start_day'] - cfg.periods[p]['start_day'] - 1)
-        p_end = q_start + time_delta
+        p_end = p_start + time_delta
     
     return yr, q_yr, q_all, p, d, p_start, p_end
 
