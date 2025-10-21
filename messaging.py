@@ -19,7 +19,8 @@ subject_prefix = '[Astro HPC]'
 email_ext = '@umd.edu'
 
 email_start = 'Dear HPC user,\n\n'
-email_end = '\n\nHappy computing!\n\nYour friendly HPC allocation robot'
+email_end = " For any other questions regarding our allocation system or Zaratan in general, please see the astro wiki at https://wiki.astro.umd.edu/computing/zaratan."
+email_end += '\n\nHappy computing!\n\nYour friendly HPC allocation robot'
 
 ###################################################################################################
 
@@ -130,7 +131,6 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
         content += " Please carefully keep track of your group's usage."
         content += " You will receive another warning email when your group's usage exceeds %d percent of this period's allocation." \
             % (cfg.warning_levels[warn_idx + 1])
-        content += " For any other questions regarding our allocation system or Zaratan in general, please see the astro wiki at https://wiki.astro.umd.edu/computing/zaratan."
     
     content += email_end
     

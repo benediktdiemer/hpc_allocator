@@ -6,7 +6,6 @@
 #
 ###################################################################################################
 
-import sys
 import argparse
 import subprocess
 import copy
@@ -37,38 +36,33 @@ def main():
     
     global test_mode
     global dry_run
+
+    parser = argparse.ArgumentParser(description = 'Welcome to the HPC allocator.')
+    parser.add_argument('-mode', type = str, default = 'check', help = 'Operation, can be check, groupinfo, userlist, or emailtest')
+    parser.add_argument('-test', default = False, action = 'store_true', help = 'Test mode, means not run on cluster')
+    parser.add_argument('-action', default = False, action = 'store_true', help = 'If true, script is live and emails are sent')
+
+    args = parser.parse_args()
+    mode = args.mode
+    test_mode = args.test
+    dry_run = (not args.action)
+
+    utils.printLine()
+    print('Welcome to the HPC Allocator')
+    utils.printLine()
+    print('Settings: operation = %s, test_mode = %s, dry_run = %s.' \
+          % (mode, str(test_mode), str(dry_run)))
     
-    if len(sys.argv) == 1:
-        
-        checkStatus(verbose = True)
-    
+    if mode == 'check':
+        checkStatus()
+    elif mode == 'groupinfo':
+        printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
+    elif mode == 'userlist':
+        printUserEmails()
+    elif mode == 'emailtest':
+        messaging.testMessage(do_send = True)
     else:
-    
-        parser = argparse.ArgumentParser(description = 'Welcome to the HPC allocator.')
-        parser.add_argument('-mode', type = str, default = 'check', help = 'Operation, can be check, groupinfo, userlist, or emailtest')
-        parser.add_argument('-test', default = False, action = 'store_true', help = 'Test mode, means not run on cluster')
-        parser.add_argument('-action', default = False, action = 'store_true', help = 'If true, script is live and emails are sent')
-    
-        args = parser.parse_args()
-        test_mode = args.test
-        dry_run = (not args.action)
-        
-        utils.printLine()
-        print('Welcome to the HPC Allocator')
-        utils.printLine()
-        print('Settings: operation = %s, test_mode = %s, dry_run = %s.' \
-              % (args.mode, str(test_mode), str(dry_run)))
-        
-        if args.mode == 'check':
-            checkStatus()
-        elif args.mode == 'groupinfo':
-            printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
-        elif args.mode == 'userlist':
-            printUserEmails()
-        elif args.mode == 'emailtest':
-            messaging.testMessage(do_send = True)
-        else:
-            raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.mode))
+        raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (mode))
         
     return
 
