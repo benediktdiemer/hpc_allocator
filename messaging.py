@@ -147,13 +147,16 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
 # This function saves messages to text file and, if do_send is True, attempts to send them via
 # email.
 
-def sendMessage(recipients, subject, content, recipient_label = None, do_send = False, verbose = False):
+def sendMessage(recipients, subject, content, recipient_label = None, 
+                do_send = False, safe_mode = True, verbose = False):
     
+    do_send = do_send and ((not safe_mode) or (recipient_label == 'diemer-prj'))
+        
     if do_send:
         email_dir = cfg.email_dir_sent
     else:
         email_dir = cfg.email_dir_draft
-        
+    
     if recipient_label is None:
         recipient_label = recipients
     
@@ -168,12 +171,15 @@ def sendMessage(recipients, subject, content, recipient_label = None, do_send = 
     f.write(content)
     f.close()
     
+    # TODO
+    return
+    
     if do_send:
 
         msg = EmailMessage()
         msg['From'] = cfg.sender_email
         msg['To'] = recipients
-        msg['Subject'] = f'Test message'
+        msg['Subject'] = subject
         msg.set_content(content)
 
         if verbose:
