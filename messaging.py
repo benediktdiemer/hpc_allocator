@@ -82,7 +82,7 @@ def messageNewPeriod(prd_data, p, grp, do_send = False):
     for usr in prd_data['groups'][grp]['users'].keys():
         recipients += '%s@umd.edu, ' % (usr)
     recipients = recipients[:-2]
-    sendMessage(recipients, subject, content, do_send = do_send, verbose = True, recipient_label = grp)
+    sendMessage(recipients, subject, content, do_send = do_send, verbose = False, recipient_label = grp)
 
     return
 
@@ -139,7 +139,7 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
     for usr in prd_data['groups'][grp]['users'].keys():
         recipients += '%s@umd.edu, ' % (usr)
     recipients = recipients[:-2]
-    sendMessage(recipients, subject, content, do_send = do_send, verbose = True, recipient_label = grp)
+    sendMessage(recipients, subject, content, do_send = do_send, verbose = False, recipient_label = grp)
 
     return
 

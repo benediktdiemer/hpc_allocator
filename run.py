@@ -399,13 +399,15 @@ def checkStatus(verbose = False):
     # ---------------------------------------------------------------------------------------------
     # Store changes to current quarter/period data and status
 
-    # Write quarter file
-    output_file = open(yaml_file_quarter, 'w')
-    yaml.dump(dic_q, output_file)
-    output_file.close()
-
-    # Write config (after function has successfully run)
     if not dry_run:
+        
+        # Write quarter file
+        print('Updating quarter yaml...')
+        output_file = open(yaml_file_quarter, 'w')
+        yaml.dump(dic_q, output_file)
+        output_file.close()
+
+        # Write config (after function has successfully run)
         print('Updating config yaml...')
         dic = {}
         dic['prev_q_all'] = q_all
