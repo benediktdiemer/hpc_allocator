@@ -171,6 +171,9 @@ def sendMessage(recipients, subject, content, recipient_label = None,
     f.write(content)
     f.close()
     
+    # TODO
+    #return
+    
     if do_send:
 
         msg = EmailMessage()

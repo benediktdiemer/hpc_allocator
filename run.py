@@ -45,35 +45,28 @@ def main():
     else:
     
         parser = argparse.ArgumentParser(description = 'Welcome to the HPC allocator.')
-    
-        helpstr = 'The operation to execute'
-        parser.add_argument('op_type', type = str, help = helpstr)
-        parser.add_argument('mode', type = str, help = helpstr)
+        parser.add_argument('-mode', type = str, default = 'check', help = 'Operation, can be check, groupinfo, or emailtest')
+        parser.add_argument('-test', default = False, action = 'store_true', help = 'Test mode, means not run on cluster')
+        parser.add_argument('-action', default = False, action = 'store_true', help = 'If true, script is live and emails are sent')
     
         args = parser.parse_args()
-    
+        test_mode = args.test
+        dry_run = (not args.action)
+        
         utils.printLine()
         print('Welcome to the HPC Allocator')
         utils.printLine()
-        print('Settings: operation = %s, mode = %s, test_mode = %s, dry_run = %s.' \
-              % (args.op_type, args.mode, str(test_mode), str(dry_run)))
-
-        if args.mode == 'test':
-            test_mode = True
-            dry_run = True
-        elif args.mode == 'dry':
-            dry_run = True
-        elif args.mode == 'action':
-            dry_run = False
+        print('Settings: operation = %s, test_mode = %s, dry_run = %s.' \
+              % (args.mode, str(test_mode), str(dry_run)))
         
-        if args.op_type == 'check':
+        if args.mode == 'check':
             checkStatus()
-        elif args.op_type == 'groupinfo':
+        elif args.mode == 'groupinfo':
             printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
-        elif args.op_type == 'emailtest':
+        elif args.mode == 'emailtest':
             messaging.testMessage(do_send = True)
         else:
-            raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.op_type))
+            raise Exception('Unknown operation, "%s". Allowed are [config, check].' % (args.mode))
         
     return
 
@@ -188,6 +181,14 @@ def checkStatus(verbose = False):
         else:
             print('    WARNING: Could not find data from previous quarter. Will assume this is first quarter.')
             dic_q_prev = None  
+    
+    else:
+        
+        pFile = open(yaml_file_quarter, 'r')
+        dic_q = yaml.safe_load(pFile)
+        pFile.close()
+    
+    prds = dic_q['periods']
 
     # ---------------------------------------------------------------------------------------------
     # Period changes
