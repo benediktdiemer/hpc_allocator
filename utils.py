@@ -49,8 +49,8 @@ def printGroupData(groups, w_tot = None,
         if (only_grp is not None) and (grp != only_grp):
             continue
         ll.append('%-20s' % (grp))
-        s1 = '    User        |'
-        s2 = '    -------------'
+        s1 = '    | User        |'
+        s2 = '    ---------------'
         if show_pos:
             s1 += ' Pos  Ex |'
             s2 += '----------'
@@ -66,7 +66,7 @@ def printGroupData(groups, w_tot = None,
         ll.append(s1)
         ll.append(s2)
         for usr in sorted(list(groups[grp]['users'].keys())):
-            s1 = '    %-12s|' % (usr)
+            s1 = '    | %-12s|' % (usr)
             if show_pos:
                 if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
                     str_previous = 'x'
@@ -84,9 +84,9 @@ def printGroupData(groups, w_tot = None,
             ll.append(s1)
 
         ll.append(s2)
-        s1 = '    TOTAL       |'
-        s2 = '    AVAILABLE   |'
-        s3 = '    FRACTION    |'
+        s1 = '    | TOTAL       |'
+        s2 = '    | AVAILABLE   |'
+        s3 = '    | FRACTION    |'
         if show_pos:
             s1 += '         |'
             s2 += '         |'
