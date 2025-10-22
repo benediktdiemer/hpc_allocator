@@ -8,7 +8,7 @@
 
 import datetime
 
-import config as cfg
+import config
 
 ###################################################################################################
 
@@ -127,6 +127,8 @@ def getTimes(days_future = 0):
         
         return datetime.date.fromisoformat('%4d-%02d-01' % (year, ((quarter - 1) * 3 + 1)))
 
+    cfg = config.getConfig()
+
     # Get current year and month
     date_today = datetime.date.today()
     if days_future != 0:
@@ -152,14 +154,14 @@ def getTimes(days_future = 0):
     d = delta.days
     
     # Determine period from days
-    p = len(cfg.periods) - 1
-    while cfg.periods[p]['start_day'] > d:
+    p = cfg['n_periods'] - 1
+    while cfg['periods'][p]['start_day'] > d:
         p -= 1
         
     # Determine first and last date of period
-    time_delta = datetime.timedelta(days = cfg.periods[p]['start_day'])
+    time_delta = datetime.timedelta(days = cfg['periods'][p]['start_day'])
     p_start = q_start + time_delta
-    if p == len(cfg.periods) - 1:
+    if p == len(cfg['periods']) - 1:
         if q_yr == 4:
             q_start_next = quarterStartDate(yr + 1, 1)
         else:
@@ -167,7 +169,7 @@ def getTimes(days_future = 0):
         time_delta = datetime.timedelta(days = -1)
         p_end = q_start_next + time_delta
     else:
-        time_delta = datetime.timedelta(days = cfg.periods[p + 1]['start_day'] - cfg.periods[p]['start_day'] - 1)
+        time_delta = datetime.timedelta(days = cfg['periods'][p + 1]['start_day'] - cfg['periods'][p]['start_day'] - 1)
         p_end = p_start + time_delta
     
     return yr, q_yr, q_all, p, d, p_start, p_end
@@ -199,6 +201,8 @@ def getSizeFromString(num_str, unit_str):
 
 def getYamlNameQuarter(q_all, yr, q_yr, previous = False):
 
+    cfg = config.getConfig()
+    
     if previous:
        
         if q_yr == 0:
@@ -207,9 +211,9 @@ def getYamlNameQuarter(q_all, yr, q_yr, previous = False):
         else:
             yr_use = yr
             q_yr_use = q_yr - 1
-        yaml_file_quarter = '%s/quarter_%02d_%04d_%d.yaml' % (cfg.yaml_dir, q_all - 1, yr_use, q_yr_use)
+        yaml_file_quarter = '%s/quarter_%02d_%04d_%d.yaml' % (cfg['yaml_dir'], q_all - 1, yr_use, q_yr_use)
     else:
-        yaml_file_quarter = '%s/quarter_%02d_%04d_%d.yaml' % (cfg.yaml_dir, q_all, yr, q_yr)
+        yaml_file_quarter = '%s/quarter_%02d_%04d_%d.yaml' % (cfg['yaml_dir'], q_all, yr, q_yr)
     
     return yaml_file_quarter
 

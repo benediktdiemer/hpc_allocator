@@ -12,7 +12,7 @@ import copy
 import os
 import yaml
 
-import config as cfg
+import config
 import utils
 import messaging
 
@@ -90,8 +90,9 @@ def checkStatus(days_future = 0, verbose = False):
     # Date config: Compute date, quarter, period; check for changes
     
     print('Setting overall config...')
-    if os.path.exists(cfg.yaml_file_cfg):
-        pFile = open(cfg.yaml_file_cfg, 'r')
+    cfg = config.getConfig()
+    if os.path.exists(cfg['yaml_file_cfg']):
+        pFile = open(cfg['yaml_file_cfg'], 'r')
         dic_cfg = yaml.safe_load(pFile)
         pFile.close()
         prev_q_all = dic_cfg['prev_q_all']
@@ -114,12 +115,12 @@ def checkStatus(days_future = 0, verbose = False):
     # Group data
 
     print('Setting group data...')
-    grp_file_found = os.path.exists(cfg.yaml_file_grps_cur)
+    grp_file_found = os.path.exists(cfg['yaml_file_grps_cur'])
 
     if (new_period or new_day or (not grp_file_found)):
         if grp_file_found:
             print('    Updating current group data...')
-            pFile = open(cfg.yaml_file_grps_cur, 'r')
+            pFile = open(cfg['yaml_file_grps_cur'], 'r')
             dic_grps_prev = yaml.safe_load(pFile)
             pFile.close()
             grps_prev = dic_grps_prev['grps_cur']               
@@ -132,7 +133,7 @@ def checkStatus(days_future = 0, verbose = False):
         dic_grps = {}
         dic_grps['grps_cur'] = grps_cur
         if not dry_run:
-            output_file = open(cfg.yaml_file_grps_cur, 'w')
+            output_file = open(cfg['yaml_file_grps_cur'], 'w')
             yaml.dump(dic_grps, output_file)
             output_file.close()
         if verbose:
@@ -143,7 +144,7 @@ def checkStatus(days_future = 0, verbose = False):
             utils.printLine()
     else:
         print('    Current group data already up to date, loading from file...')
-        pFile = open(cfg.yaml_file_grps_cur, 'r')
+        pFile = open(cfg['yaml_file_grps_cur'], 'r')
         dic_grps = yaml.safe_load(pFile)
         pFile.close()
         grps_cur = dic_grps['grps_cur']
@@ -212,7 +213,7 @@ def checkStatus(days_future = 0, verbose = False):
             prd_old = prds[p - 1]
         else:
             if dic_q_prev is not None:
-                prd_old = dic_q_prev['periods'][cfg.n_periods - 1]
+                prd_old = dic_q_prev['periods'][cfg['n_periods'] - 1]
             else:
                 prd_old = {}
                 prd_old['groups'] = {}
@@ -230,8 +231,8 @@ def checkStatus(days_future = 0, verbose = False):
         prd_new['w_tot'] = w_tot_cur
 
         # Compute available allocation
-        if p < cfg.n_periods - 1:
-            alloc_period = q_su_avail_astr * cfg.periods[p]['alloc_frac']
+        if p < cfg['n_periods'] - 1:
+            alloc_period = q_su_avail_astr * cfg['periods'][p]['alloc_frac']
         else:
             alloc_period = q_su_avail_astr
         prd_new['su_avail'] = q_su_avail_astr
@@ -301,10 +302,10 @@ def checkStatus(days_future = 0, verbose = False):
                 prd_new['groups'][grp]['users'][usr]['su_usage'] = 0.0
                 
             # Multiply penalty by penalty factor
-            penalty_old *= cfg.penalty_factor
+            penalty_old *= cfg['penalty_factor']
             
             # Distinguish the last period in each quarter
-            if p < cfg.n_periods - 1:
+            if p < cfg['n_periods'] - 1:
                 alloc_grp = alloc_period * w_frac
                 if penalty_old <= alloc_grp:
                     alloc_grp_final = alloc_grp - penalty_old
@@ -385,9 +386,9 @@ def checkStatus(days_future = 0, verbose = False):
                 usage_prct_new = grp_su_usage_new / su_alloc * 100.0
                 warned_level = -1
                 if grp_su_usage_new > 0.0:
-                    for ii in range(len(cfg.warning_levels)):
-                        i = len(cfg.warning_levels) - ii - 1
-                        if (usage_prct_new > cfg.warning_levels[i]) and (usage_prct_old <= cfg.warning_levels[i]):
+                    for ii in range(len(cfg['warning_levels'])):
+                        i = len(cfg['warning_levels']) - ii - 1
+                        if (usage_prct_new > cfg['warning_levels'][i]) and (usage_prct_old <= cfg['warning_levels'][i]):
                             messaging.messageUsageWarning(prd_cur, grp, i, do_send = (not dry_run))
                             warned_level = i
                             break
@@ -395,7 +396,7 @@ def checkStatus(days_future = 0, verbose = False):
                       % (grp, su_alloc / 1000.0, grp_su_usage_old / 1000.0, grp_su_usage_new / 1000.0, 
                          usage_prct_old, usage_prct_new)
                 if warned_level >= 0:
-                    s += ' (%d%% warning)' % (cfg.warning_levels[warned_level])
+                    s += ' (%d%% warning)' % (cfg['warning_levels'][warned_level])
                 print(s)
             else:
                 if grp_su_usage_new > grp_su_usage_old + 1.0:
@@ -418,7 +419,7 @@ def checkStatus(days_future = 0, verbose = False):
         dic['prev_q_all'] = q_all
         dic['prev_p'] = p
         dic['prev_d'] = d
-        output_file = open(cfg.yaml_file_cfg, 'w')
+        output_file = open(cfg['yaml_file_cfg'], 'w')
         yaml.dump(dic, output_file)
         output_file.close()
     
@@ -452,10 +453,11 @@ def collectAllocation():
 
 def collectUserData(verbose = False):
     
+    cfg = config.getConfig()
     users = {}
     
-    for lname in cfg.astro_lists.keys():
-        ptype = cfg.astro_lists[lname]['people_type']
+    for lname in cfg['astro_lists'].keys():
+        ptype = cfg['astro_lists'][lname]['people_type']
         f = open('astro_lists/' + lname, 'r')
         ll = f.readlines()
         f.close()
@@ -463,7 +465,7 @@ def collectUserData(verbose = False):
             uid = (l.split('@')[0]).lower()
             users[uid] = {'people_type': ptype, 'past_user': False, 'active': True}
     
-    users.update(cfg.users_extra)
+    users.update(cfg['users_extra'])
     
     if verbose:
         utils.printLine()
@@ -485,9 +487,11 @@ def collectUserData(verbose = False):
 
 def collectGroupData(verbose = False):
     
+    cfg = config.getConfig()
+    
     # In test mode, we just load a previously determined set of group data
     if test_mode:
-        pFile = open(cfg.yaml_file_grps_cur, 'r')
+        pFile = open(cfg['yaml_file_grps_cur'], 'r')
         dic_grps = yaml.safe_load(pFile)
         pFile.close()
         grps_cur = dic_grps['grps_cur']
@@ -497,7 +501,7 @@ def collectGroupData(verbose = False):
     known_users = collectUserData(verbose = False)
     
     # Get group users
-    groups = copy.copy(cfg.groups)
+    groups = copy.copy(cfg['groups'])
     for grp in groups.keys():
         
         groups[grp]['users'] = {}
@@ -547,7 +551,7 @@ def collectGroupData(verbose = False):
                 if past_user:
                     weight = 0.0
                 else:
-                    weight = cfg.people_types[ptype]['weight']
+                    weight = cfg['people_types'][ptype]['weight']
             groups[grp]['users'][usr]['people_type'] = ptype
             groups[grp]['users'][usr]['past_user'] = past_user
             groups[grp]['users'][usr]['active'] = user_active
@@ -596,10 +600,12 @@ def collectGroupData(verbose = False):
 
 def getGroupDataFromFile():
 
-    if not os.path.exists(cfg.yaml_file_grps_cur):
+    cfg = config.getConfig()
+    
+    if not os.path.exists(cfg['yaml_file_grps_cur']):
         raise Exception('Could not find yaml file for current groups.')
 
-    pFile = open(cfg.yaml_file_grps_cur, 'r')
+    pFile = open(cfg['yaml_file_grps_cur'], 'r')
     dic_grps = yaml.safe_load(pFile)
     pFile.close()
     
@@ -612,12 +618,14 @@ def printCurrentGroups(show_weight = True, show_su = True, show_scratch = True):
     dic_grps = getGroupDataFromFile()
     utils.printGroupData(dic_grps['grps_cur'], show_weight = show_weight, 
                    show_su = show_su, show_scratch = show_scratch)
-            
+    
     return
 
 ###################################################################################################
 
 def printUserEmails(include_admin = False, make_email = True):
+    
+    cfg = config.getConfig()
     
     dic_grps = getGroupDataFromFile()
     grps = dic_grps['grps_cur']
@@ -628,7 +636,7 @@ def printUserEmails(include_admin = False, make_email = True):
     all_users = list(set(all_users))
     all_users.sort()
     if not include_admin:
-        all_users.remove(cfg.admin_user)
+        all_users.remove(cfg['admin_user'])
     for usr in all_users:
         if make_email:
             print('%s@umd.edu' % usr)

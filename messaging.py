@@ -10,7 +10,7 @@ import smtplib
 from email.message import EmailMessage
 import datetime
 
-import config as cfg
+import config
 import utils
 
 ###################################################################################################
@@ -26,11 +26,13 @@ email_end += '\n\nHappy computing!\n\nYour friendly HPC allocation robot'
 
 def testMessage(do_send = False):
 
+    cfg = config.getConfig()
+    
     subject = 'Test message'
     content = 'This is a test message.\nThe date and time is %s.\n\nThe HPC admin' \
                         % (str(datetime.datetime.now()))
     
-    sendMessage(cfg.test_email, subject, content, do_send = do_send, verbose = True)
+    sendMessage(cfg['email']['test_email'], subject, content, do_send = do_send, verbose = True)
 
     return
 
@@ -41,12 +43,14 @@ def testMessage(do_send = False):
 
 def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
     
+    cfg = config.getConfig()
+    
     subject = '%s New allocation period' % (subject_prefix)
 
     content = email_start
     content += 'You are receiving this email because you are a member of the user group %s.' % (grp)
     content += " We are beginning this quarter's %s allocation period, which runs from %s to %s." \
-        % (cfg.periods[p]['label'], prd_data['start_date'].strftime('%Y/%m/%d'), prd_data['end_date'].strftime('%Y/%m/%d'))
+        % (cfg['periods'][p]['label'], prd_data['start_date'].strftime('%Y/%m/%d'), prd_data['end_date'].strftime('%Y/%m/%d'))
 
     if grp in prd_data_prev['groups']:
         content += " The following table shows your group's usage over the previous period (in kSU), as well as your current scratch usage (in GB):"
@@ -75,7 +79,7 @@ def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
     content += '\n'
     content += '\n'
     content += 'Remaining quarterly allocation for astronomy:   %7.1f kSU\n' % (prd_data['su_avail'] / 1000.0)
-    content += 'Over/under-subscription factor for period:      %7.1f\n' % (cfg.periods[p]['alloc_frac'])
+    content += 'Over/under-subscription factor for period:      %7.1f\n' % (cfg['periods'][p]['alloc_frac'])
     content += 'Total allocation for this period:               %7.1f kSU\n' % (prd_data['su_alloc'] / 1000.0)
     content += "Your group's fractional allocation:             %7.1f %%\n" % (prd_data['groups'][grp]['weight_frac'] * 100.0)
     content += "Your group's allocation before penalties:       %7.1f kSU\n" % (prd_data['groups'][grp]['weight_frac'] * prd_data['su_alloc'] / 1000.0)
@@ -84,7 +88,7 @@ def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
     content += '\n'
     content += "It is the responsibility of all group members to keep track of your group's usage."
     content += " You will receive a warning email when your group's usage exceeds %d percent of this period's allocation." \
-        % (cfg.warning_levels[0])
+        % (cfg['warning_levels'][0])
     content += email_end
     
     # Send
@@ -100,6 +104,8 @@ def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
 
 def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
 
+    cfg = config.getConfig()
+    
     zero_alloc = (prd_data['groups'][grp]['alloc'] <= 0.0)
     if not zero_alloc:
         used_frac = prd_data['groups'][grp]['su_usage'] / prd_data['groups'][grp]['alloc']
@@ -140,7 +146,7 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
     else:
         content += " Please carefully keep track of your group's usage."
         content += " You will receive another warning email when your group's usage exceeds %d percent of this period's allocation." \
-            % (cfg.warning_levels[warn_idx + 1])
+            % (cfg['warning_levels'][warn_idx + 1])
     
     content += email_end
     
@@ -161,12 +167,14 @@ def messageUsageWarning(prd_data, grp, warn_idx, do_send = False):
 def sendMessage(recipients, subject, content, recipient_label = None, 
                 do_send = False, safe_mode = False, verbose = False):
     
+    cfg = config.getConfig()
+    
     do_send = do_send and ((not safe_mode) or (recipient_label == 'diemer-prj'))
         
     if do_send:
-        email_dir = cfg.email_dir_sent
+        email_dir = cfg['email_dir_sent']
     else:
-        email_dir = cfg.email_dir_draft
+        email_dir = cfg['email_dir_draft']
     
     if recipient_label is None:
         recipient_label = recipients
@@ -175,7 +183,7 @@ def sendMessage(recipients, subject, content, recipient_label = None,
     time_str = time_str.replace(' ', '_').replace('-', '_').replace(':', '_')
     fname = email_dir + time_str + '_' + recipient_label + '.txt'
     f = open(fname, 'w')
-    f.write('From:    %s\n' % (cfg.sender_email))
+    f.write('From:    %s\n' % (cfg['email']['sender_email']))
     f.write('To:      %s\n' % (recipients))
     f.write('Subject: %s\n' % (subject))
     f.write('\n\n')
@@ -185,7 +193,7 @@ def sendMessage(recipients, subject, content, recipient_label = None,
     if do_send:
 
         msg = EmailMessage()
-        msg['From'] = cfg.sender_email
+        msg['From'] = cfg['email']['sender_email']
         msg['To'] = recipients
         msg['Subject'] = subject
         msg.set_content(content)
@@ -208,7 +216,7 @@ def sendMessage(recipients, subject, content, recipient_label = None,
         # Login to the server (if required)
         if verbose:
             print('    Logging in...')
-        s.login(cfg.sender_email , cfg.sender_password)
+        s.login(cfg['email']['sender_email'] , cfg['email']['sender_password'])
         
         # Send message
         if verbose:

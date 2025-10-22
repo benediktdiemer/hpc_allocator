@@ -1,0 +1,98 @@
+# This is a sample config file for the HPC allocator program.
+#
+###################################################################################################
+# STORAGE
+###################################################################################################
+yaml_dir: yaml/
+yaml_file_cfg: yaml/current_config.yaml
+yaml_file_grps_cur: yaml/groups_current.yaml
+email_dir_draft: emails_draft/
+email_dir_sent: emails_sent/
+###################################################################################################
+# USER CATEGORIES
+###################################################################################################
+people_types:
+  ttk:
+    desc: TTK faculty
+    weight: 1.0
+  ptk:
+    desc: PTK faculty
+    weight: 0.4
+  pd:
+    desc: Postdoc
+    weight: 0.3
+  gs:
+    desc: Grad student
+    weight: 0.2
+  ug:
+    desc: Undergrad
+    weight: 0.1
+  tbd:
+    desc: Unknown
+    weight: 0.0
+###################################################################################################
+# USER DATA
+###################################################################################################
+# Set user data. First we pull users automatically from a number of astro lists (email exploders)
+# and set their type. The data can be overwritten with the users_extra dictionary.
+astro_lists:
+  graduates:
+    people_type: gs
+  research-scientist:
+    people_type: ptk
+  postdocs-all:
+    people_type: pd
+  professorial:
+    people_type: ttk
+users_extra:
+  someone1:
+    people_type: ttk
+    past_user: true
+    weight: 0.5
+  someone2:
+    people_type: gs
+    past_user: true
+###################################################################################################
+# GROUPS
+###################################################################################################
+# Set group data; note that the username of the group leader does not necessarily match the name
+# of the project.
+groups:
+  someone-prj:
+    lead: someone
+###################################################################################################
+# ALLOCATION PERIODS WITHIN EACH QUARTER
+###################################################################################################
+# Allocation periods. The allocation fraction is the fraction of the total SUs remaining that is
+# allocated to users, and it thus represents the product of the duration of the period and an
+# oversubscription factor.
+periods:
+  0:
+    start_day: 0
+    alloc_frac: 0.9
+    label: 1st
+  1:
+    start_day: 30
+    alloc_frac: 1.5
+    label: 2nd
+  2:
+    start_day: 60
+    alloc_frac: 2.0
+    label: 3rd
+  3:
+    start_day: 80
+    alloc_frac: null
+    label: final
+###################################################################################################
+# PENALTY SETTINGS
+###################################################################################################
+# If there is no additional penalty for exceeding allocations, that would create a perverse 
+# incentive to do so since time earlier in the quarter is "more valuable" than time later, when the
+# oversubscription factors are larger.
+penalty_factor: 1.0
+###################################################################################################
+# LEVELS WHEN WARNINGS ARE SENT OUT
+###################################################################################################
+# When the usage of a group exceeds the following ratios with their total allocation for the first
+# time, an email is sent. The fractions are expressed as percent so that they are integers.
+warning_levels: [80, 100]

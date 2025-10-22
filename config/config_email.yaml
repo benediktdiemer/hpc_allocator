@@ -1,0 +1,4 @@
+email:
+  sender_email: adminuser@umd.edu
+  sender_password: xxxx
+  test_email: adminuser@gmail.com
