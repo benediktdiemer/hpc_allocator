@@ -65,7 +65,9 @@ def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
     
     content += 'The following table details the allocation that your group has received for the new period according to our distribution key.'
     content += ' An "x" means that a user is marked as being a former member of UMD astronomy.'
-    content += ' If that is incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
+    content += ' An "i" means that a user is marked as inactive.'
+    content += ' An "m" means that a user is part of multiple groups and that their weight was reduced accordingly.'
+    content += ' If any of this information incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
     content += '\n'
     content += '\n'
     ll = utils.printGroupData(prd_data['groups'], w_tot = prd_data['w_tot'],
