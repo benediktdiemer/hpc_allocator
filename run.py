@@ -502,6 +502,7 @@ def collectGroupData(verbose = False):
     
     # Get group users
     groups = copy.copy(cfg['groups'])
+    all_users = {}
     for grp in groups.keys():
         
         groups[grp]['users'] = {}
@@ -523,7 +524,6 @@ def collectGroupData(verbose = False):
         i += 2
         
         # Find users in list
-        w_grp = 0.0
         while i < len(ll):
             w = ll[i].split()
             usr = w[0]
@@ -556,14 +556,17 @@ def collectGroupData(verbose = False):
             groups[grp]['users'][usr]['past_user'] = past_user
             groups[grp]['users'][usr]['active'] = user_active
             groups[grp]['users'][usr]['weight'] = weight
+            groups[grp]['users'][usr]['multi_grp'] = False
             groups[grp]['users'][usr]['su_usage'] = 0.0
             
-            # Sum group weight from users
-            w_grp += groups[grp]['users'][usr]['weight']
+            # Add user to all-list to check for duplicates
+            if usr in all_users:
+                all_users[usr] += 1
+            else:
+                all_users[usr] = 1
+            
+            # Move on to next line in output
             i += 1
-
-        # Set group weight and add to total
-        groups[grp]['weight'] = w_grp
 
         # Analyze s_balance to get SU usage
         ret = subprocess.run(['sbalance', '-account', '%s-astr' % (grp), '--all'], 
@@ -586,6 +589,18 @@ def collectGroupData(verbose = False):
                 raise Exception('Found user "%s" in sbalance return but not in group users.' % (usr))
             groups[grp]['users'][usr]['su_usage'] = float(w[3]) * 1000.0
             i += 1
+
+    # Add weights, checking for duplicate users
+    for grp in groups.keys():
+        w_grp = 0.0
+        for usr in groups[grp]['users']:
+            if not usr in all_users:
+                raise Exception('Internal error, did not find user %s in all user list.' % (usr))
+            if all_users[usr] > 1:
+                groups[grp]['users'][usr]['weight'] /= all_users[usr]
+                groups[grp]['users'][usr]['multi_grp'] = True
+            w_grp += groups[grp]['users'][usr]['weight']
+        groups[grp]['weight'] = w_grp
     
     if verbose:
         utils.printLine()
