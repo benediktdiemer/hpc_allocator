@@ -52,7 +52,7 @@ def printGroupData(groups, w_tot = None,
         s1 = '    | User        |'
         s2 = '    ---------------'
         if show_pos:
-            s1 += ' Pos  Ex |'
+            s1 += ' Position |'
             s2 += '----------'
         if show_weight:
             s1 += ' Weight |'
@@ -68,13 +68,14 @@ def printGroupData(groups, w_tot = None,
         for usr in sorted(list(groups[grp]['users'].keys())):
             s1 = '    | %-12s|' % (usr)
             if show_pos:
+                str_previous = ''
                 if ('past_user' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['past_user']):
-                    str_previous = 'x'
-                elif ('past_user' in groups[grp]['users'][usr]) and (not groups[grp]['users'][usr]['active']):
-                    str_previous = 'i'
-                else:
-                    str_previous = ' '
-                s1 += ' %-3s  %s  |' % (groups[grp]['users'][usr]['people_type'], str_previous)
+                    str_previous += 'x'
+                if ('past_user' in groups[grp]['users'][usr]) and (not groups[grp]['users'][usr]['active']):
+                    str_previous += 'i'
+                if ('multi_grp' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['multi_grp']):
+                    str_previous += 'm'
+                s1 += ' %-3s %-3s |' % (groups[grp]['users'][usr]['people_type'], str_previous)
             if show_weight:
                 s1 += '  %5.2f |' % (groups[grp]['users'][usr]['weight'])
             if show_su:

@@ -541,7 +541,7 @@ def collectGroupData(verbose = False):
                 if 'weight' in known_users[usr]:
                     weight = known_users[usr]['weight']
             else:
-                print('WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
+                print('    WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
                 ptype = 'tbd'
                 past_user = False
             
@@ -599,6 +599,7 @@ def collectGroupData(verbose = False):
             if all_users[usr] > 1:
                 groups[grp]['users'][usr]['weight'] /= all_users[usr]
                 groups[grp]['users'][usr]['multi_grp'] = True
+                print('    Found duplicate user %s in group %s, reducing weight to %.2f.' % (usr, grp, groups[grp]['users'][usr]['weight']))
             w_grp += groups[grp]['users'][usr]['weight']
         groups[grp]['weight'] = w_grp
     
