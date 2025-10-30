@@ -78,15 +78,17 @@ def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
         % (prd_data['groups'][grp]['alloc'] / 1000.0)
     content += '\n'
     content += '\n'
-    content += 'Remaining quarterly allocation for astronomy:   %7.1f kSU\n' % (prd_data['su_avail'] / 1000.0)
-    content += 'Over/under-subscription factor for period:      %7.1f\n' % (cfg['periods'][p]['alloc_frac'])
-    content += 'Total allocation for this period:               %7.1f kSU\n' % (prd_data['su_alloc'] / 1000.0)
-    content += "Your group's fractional allocation:             %7.1f %%\n" % (prd_data['groups'][grp]['weight_frac'] * 100.0)
-    content += "Your group's allocation before penalties:       %7.1f kSU\n" % (prd_data['groups'][grp]['weight_frac'] * prd_data['su_alloc'] / 1000.0)
-    content += "Penalty from previous period(s):                %7.1f kSU\n" % (prd_data['groups'][grp]['penalty_old'] / 1000.0)
-    content += "Your group's allocation:                        %7.1f kSU\n" % (prd_data['groups'][grp]['alloc'] / 1000.0)
+    content += 'Remaining quarterly allocation for astronomy:        %7.1f kSU\n' % (prd_data['su_avail'] / 1000.0)
+    content += 'Over/under-subscription factor for this period:      %7.1f\n' % (cfg['periods'][p]['alloc_frac'])
+    content += 'Total allocation for this period:                    %7.1f kSU\n' % (prd_data['su_alloc'] / 1000.0)
+    content += "Your group's fractional allocation:                  %7.1f %%\n" % (prd_data['groups'][grp]['weight_frac'] * 100.0)
+    content += "Your group's allocation before penalties:            %7.1f kSU\n" % (prd_data['groups'][grp]['weight_frac'] * prd_data['su_alloc'] / 1000.0)
+    content += "Penalty from previous period(s):                     %7.1f kSU\n" % (prd_data['groups'][grp]['penalty_old'] / 1000.0)
+    content += "Your group's allocation for this period:             %7.1f kSU\n" % (prd_data['groups'][grp]['alloc'] / 1000.0)
+    content += "Your group's current cumulative usage this quarter:  %7.1f kSU\n" % (prd_data_prev['groups'][grp]['su_usage'] / 1000.0)
+    content += "Your group's maximum cumulative usage this period:   %7.1f kSU\n" % ((prd_data_prev['groups'][grp]['su_usage'] + prd_data['groups'][grp]['alloc']) / 1000.0)
     content += '\n'
-    content += "It is the responsibility of all group members to keep track of your group's usage."
+    content += "It is the responsibility of all group members to monitor your group's usage."
     content += " You will receive a warning email when your group's usage exceeds %d percent of this period's allocation." \
         % (cfg['warning_levels'][0])
     content += email_end
