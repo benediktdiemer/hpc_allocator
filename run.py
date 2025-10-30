@@ -541,7 +541,7 @@ def collectGroupData(verbose = False):
                 if 'weight' in known_users[usr]:
                     weight = known_users[usr]['weight']
             else:
-                print('    WARNING: Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
+                print('    Could not find group %-12s user %-12s in user list. Setting weight to default.' % (grp, usr))
                 ptype = 'tbd'
                 past_user = False
             

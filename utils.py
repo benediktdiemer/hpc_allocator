@@ -53,7 +53,7 @@ def printGroupData(groups, w_tot = None,
         s2 = '    ---------------'
         if show_pos:
             s1 += ' Position |'
-            s2 += '----------'
+            s2 += '-----------'
         if show_weight:
             s1 += ' Weight |'
             s2 += '---------'
@@ -75,7 +75,7 @@ def printGroupData(groups, w_tot = None,
                     str_previous += 'i'
                 if ('multi_grp' in groups[grp]['users'][usr]) and (groups[grp]['users'][usr]['multi_grp']):
                     str_previous += 'm'
-                s1 += ' %-3s %-3s |' % (groups[grp]['users'][usr]['people_type'], str_previous)
+                s1 += ' %-3s  %-3s |' % (groups[grp]['users'][usr]['people_type'], str_previous)
             if show_weight:
                 s1 += '  %5.2f |' % (groups[grp]['users'][usr]['weight'])
             if show_su:
@@ -89,9 +89,9 @@ def printGroupData(groups, w_tot = None,
         s2 = '    | AVAILABLE   |'
         s3 = '    | FRACTION    |'
         if show_pos:
-            s1 += '         |'
-            s2 += '         |'
-            s3 += '         |'
+            s1 += '          |'
+            s2 += '          |'
+            s3 += '          |'
         if show_weight:
             s1 += '  %5.2f |' % (groups[grp]['weight'])
             s2 += '  %5.2f |' % (w_tot)
