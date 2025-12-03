@@ -61,6 +61,8 @@ def main():
         printCurrentGroups(show_weight = True, show_su = False, show_scratch = False)
     elif mode == 'userlist':
         printUserEmails()
+    elif mode == 'scratch':
+        printScratchAllocations()
     elif mode == 'emailtest':
         messaging.testMessage(do_send = True)
     else:
@@ -658,6 +660,28 @@ def printUserEmails(include_admin = False, make_email = True):
             print('%s@umd.edu' % usr)
         else:
             print(usr)
+    
+    return
+
+###################################################################################################
+
+def printScratchAllocations():
+
+    dic_grps = getGroupDataFromFile()
+    grps = dic_grps['grps_cur']
+    scratch_tot = 0.0
+    scratch_use = 0.0
+    for grp in grps:
+        scratch_tot += grps[grp]['scratch_quota']
+        scratch_use += grps[grp]['scratch_usage']
+    
+    print('-------------------------------------------')
+    for grp in grps:
+        print('%-15s  %8.2f  %8.2f  %5.1f%%' % (grp, grps[grp]['scratch_quota'] / 1000, grps[grp]['scratch_usage'] / 1000, 
+                                100.0 * grps[grp]['scratch_usage'] / grps[grp]['scratch_quota']))
+    print('-------------------------------------------')
+    print('                 %8.2f  %8.2f  %5.1f%%' % (scratch_tot / 1000, scratch_use / 1000, 
+                                                               100.0 * scratch_use / scratch_tot))
     
     return
 
