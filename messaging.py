@@ -19,7 +19,7 @@ subject_prefix = '[Astro HPC]'
 email_ext = '@umd.edu'
 
 email_start = 'Dear HPC user,\n\n'
-email_end = " For any other questions regarding our allocation system or Zaratan in general, please see the astro wiki at https://wiki.astro.umd.edu/computing/zaratan."
+email_end = "For any other questions regarding our allocation system or Zaratan in general, please see the astro wiki at https://wiki.astro.umd.edu/computing/zaratan."
 email_end += '\n\nHappy computing!\n\nYour friendly HPC allocation robot'
 
 ###################################################################################################
@@ -44,16 +44,17 @@ def testMessage(do_send = False):
 def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
     
     cfg = config.getConfig()
+    is_final_period = (p == len(cfg['periods']) - 1)
     
     subject = '%s New allocation period' % (subject_prefix)
 
     content = email_start
     content += 'You are receiving this email because you are a member of the user group %s.' % (grp)
-    content += " We are beginning this quarter's %s allocation period, which runs from %s to %s." \
+    content += " We are beginning this quarter's %s allocation period, which runs from %s to %s. " \
         % (cfg['periods'][p]['label'], prd_data['start_date'].strftime('%Y/%m/%d'), prd_data['end_date'].strftime('%Y/%m/%d'))
 
     if grp in prd_data_prev['groups']:
-        content += " The following table shows your group's usage over the previous period (in kSU), as well as your current scratch usage (in GB):"
+        content += "The following table shows your group's usage over the previous period (in kSU), as well as your current scratch usage (in GB):"
         content += '\n'
         content += '\n'
         ll = utils.printGroupData(prd_data_prev['groups'], w_tot = prd_data_prev['w_tot'],
@@ -62,37 +63,47 @@ def messageNewPeriod(prd_data, prd_data_prev, p, grp, do_send = False):
             if i == 0:
                 continue
             content += ll[i] + '\n'
+        su_usage_cum_old = prd_data_prev['groups'][grp]['su_usage']
+    else:
+        su_usage_cum_old = 0.0
+
+    if is_final_period:
+        content += "In this final period of the quarter, all groups are allocated the full remaining allocation for astronomy, namely %.1f kSU." \
+            % (prd_data['groups'][grp]['alloc'] / 1000.0)
+        content += ' Feel free to burn!\n\n'
+    else:
+        content += 'The following table details the allocation that your group has received for the new period according to our distribution key.'
+        content += ' An "x" means that a user is marked as being a former member of UMD astronomy.'
+        content += ' An "i" means that a user is marked as inactive.'
+        content += ' An "m" means that a user is part of multiple groups and that their weight was reduced accordingly.'
+        content += ' If any of this information incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
+        content += '\n'
+        content += '\n'
+        ll = utils.printGroupData(prd_data['groups'], w_tot = prd_data['w_tot'],
+                                      only_grp = grp, show_su = False, show_scratch = False, do_print = False)
+        for i in range(len(ll)):
+            if i == 0:
+                continue
+            content += ll[i] + '\n'
+
+        content += "Your group's total allocation for this period is %.1f kSU. This is calculated as follows:" \
+            % (prd_data['groups'][grp]['alloc'] / 1000.0)
+        content += '\n'
+        content += '\n'
+        content += 'Remaining quarterly allocation for astronomy:        %7.1f kSU\n' % (prd_data['su_avail'] / 1000.0)
+        content += 'Over/under-subscription factor for this period:      %7.1f\n' % (cfg['periods'][p]['alloc_frac'])
+        content += 'Total allocation for this period:                    %7.1f kSU\n' % (prd_data['su_alloc'] / 1000.0)
+        content += "Your group's fractional allocation:                  %7.1f %%\n" % (prd_data['groups'][grp]['weight_frac'] * 100.0)
+        content += "Your group's allocation before penalties:            %7.1f kSU\n" % (prd_data['groups'][grp]['weight_frac'] * prd_data['su_alloc'] / 1000.0)
+        content += "Penalty from previous period(s):                     %7.1f kSU\n" % (prd_data['groups'][grp]['penalty_old'] / 1000.0)
+        content += "Your group's allocation for this period:             %7.1f kSU\n" % (prd_data['groups'][grp]['alloc'] / 1000.0)
+        content += "Your group's current cumulative usage this quarter:  %7.1f kSU\n" % (su_usage_cum_old / 1000.0)
+        content += "Your group's maximum cumulative usage this period:   %7.1f kSU\n" % ((su_usage_cum_old / 1000.0 + prd_data['groups'][grp]['alloc']) / 1000.0)
+        content += '\n'
+        content += "It is the responsibility of all group members to monitor your group's usage."
+        content += " You will receive a warning email when your group's usage exceeds %d percent of this period's allocation. " \
+            % (cfg['warning_levels'][0])
     
-    content += 'The following table details the allocation that your group has received for the new period according to our distribution key.'
-    content += ' An "x" means that a user is marked as being a former member of UMD astronomy.'
-    content += ' An "i" means that a user is marked as inactive.'
-    content += ' An "m" means that a user is part of multiple groups and that their weight was reduced accordingly.'
-    content += ' If any of this information incorrect, or if members not marked with an "x" have left your group, please let the HPC admin know.'
-    content += '\n'
-    content += '\n'
-    ll = utils.printGroupData(prd_data['groups'], w_tot = prd_data['w_tot'],
-                                  only_grp = grp, show_su = False, show_scratch = False, do_print = False)
-    for i in range(len(ll)):
-        if i == 0:
-            continue
-        content += ll[i] + '\n'
-    content += "Your group's total allocation for this period is %.1f kSU. This is calculated as follows:" \
-        % (prd_data['groups'][grp]['alloc'] / 1000.0)
-    content += '\n'
-    content += '\n'
-    content += 'Remaining quarterly allocation for astronomy:        %7.1f kSU\n' % (prd_data['su_avail'] / 1000.0)
-    content += 'Over/under-subscription factor for this period:      %7.1f\n' % (cfg['periods'][p]['alloc_frac'])
-    content += 'Total allocation for this period:                    %7.1f kSU\n' % (prd_data['su_alloc'] / 1000.0)
-    content += "Your group's fractional allocation:                  %7.1f %%\n" % (prd_data['groups'][grp]['weight_frac'] * 100.0)
-    content += "Your group's allocation before penalties:            %7.1f kSU\n" % (prd_data['groups'][grp]['weight_frac'] * prd_data['su_alloc'] / 1000.0)
-    content += "Penalty from previous period(s):                     %7.1f kSU\n" % (prd_data['groups'][grp]['penalty_old'] / 1000.0)
-    content += "Your group's allocation for this period:             %7.1f kSU\n" % (prd_data['groups'][grp]['alloc'] / 1000.0)
-    content += "Your group's current cumulative usage this quarter:  %7.1f kSU\n" % (prd_data_prev['groups'][grp]['su_usage'] / 1000.0)
-    content += "Your group's maximum cumulative usage this period:   %7.1f kSU\n" % ((prd_data_prev['groups'][grp]['su_usage'] + prd_data['groups'][grp]['alloc']) / 1000.0)
-    content += '\n'
-    content += "It is the responsibility of all group members to monitor your group's usage."
-    content += " You will receive a warning email when your group's usage exceeds %d percent of this period's allocation." \
-        % (cfg['warning_levels'][0])
     content += email_end
     
     # Send
