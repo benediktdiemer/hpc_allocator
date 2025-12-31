@@ -100,7 +100,10 @@ def printGroupData(groups, w_tot = None,
             s1 += ' %8.1f |' % (groups[grp]['su_usage'] / 1000.0)
             if 'alloc' in groups[grp]:
                 s2 += ' %8.1f |' % (groups[grp]['alloc'] / 1000.0)
-                s3 += '   %5.1f%% |' % (100.0 * groups[grp]['su_usage'] / groups[grp]['alloc'])
+                if groups[grp]['alloc'] > 0.0:
+                    s3 += '   %5.1f%% |' % (100.0 * groups[grp]['su_usage'] / groups[grp]['alloc'])
+                else:
+                    s3 += '          |'
             else:
                 s2 += '             |'
                 s3 += '             |'
@@ -205,8 +208,7 @@ def getYamlNameQuarter(q_all, yr, q_yr, previous = False):
     cfg = config.getConfig()
     
     if previous:
-       
-        if q_yr == 0:
+        if q_yr == 1:
             yr_use = yr - 1
             q_yr_use = 4
         else:
