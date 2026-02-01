@@ -289,19 +289,35 @@ def checkStatus(days_future = 0, verbose = False):
             all_users += list(prd_new['groups'][grp]['users'].keys())
             all_users = list(set(all_users))
             for usr in all_users:
+
+                # Find old cumulative usage
                 if new_quarter:
                     if (grp in grps_prev) and (usr in grps_prev[grp]['users']):
+                        # User existed in previous quarter, we take the cumulative usage from there
                         usr_su_usage_cum = grps_prev[grp]['users'][usr]['su_usage']
                     else:
+                        # User did not exist in previous quarter
                         usr_su_usage_cum = 0.0
+                    # In new quarter, cumulative usage always starts at zero
                     if usr in prd_new['groups'][grp]['users']:
                         prd_new['groups'][grp]['users'][usr]['su_usage_start'] = 0.0
                 else:
-                    usr_su_usage_cum = grps_cur[grp]['users'][usr]['su_usage']
-                    prd_new['groups'][grp]['users'][usr]['su_usage_start'] = usr_su_usage_cum
+                    if usr in prd_new['groups'][grp]['users']:
+                        # User is in current quarter, we take current cumulative usage
+                        usr_su_usage_cum = grps_cur[grp]['users'][usr]['su_usage']
+                        prd_new['groups'][grp]['users'][usr]['su_usage_start'] = usr_su_usage_cum
+                    else:
+                        # User is not in current period, so can only be on this list because they 
+                        # were in the old period.
+                        usr_su_usage_cum = prd_old['groups'][grp]['users'][usr]['su_usage']
+
+                # Set usage in old period
                 if (grp in prd_old['groups']) and (usr in prd_old['groups'][grp]['users']):
                     prd_old['groups'][grp]['users'][usr]['su_usage'] = usr_su_usage_cum - prd_old['groups'][grp]['users'][usr]['su_usage_start']
-                prd_new['groups'][grp]['users'][usr]['su_usage'] = 0.0
+                
+                # Initialize new period, if user exists
+                if usr in prd_new['groups'][grp]['users']:
+                    prd_new['groups'][grp]['users'][usr]['su_usage'] = 0.0
                 
             # Multiply penalty by penalty factor
             penalty_old *= cfg['penalty_factor']
