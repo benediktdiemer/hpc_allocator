@@ -534,8 +534,14 @@ def collectGroupData(verbose = False):
         w = ll[i].split()
         if w[0] != 'zt-%s' % (grp):
             raise Exception('Expected "zt-%s" in third line of output.' % (grp))
-        groups[grp]['scratch_quota'] = utils.getSizeFromString(w[3], w[4])
-        groups[grp]['scratch_usage'] = utils.getSizeFromString(w[1], w[2])
+        try:
+            groups[grp]['scratch_quota'] = utils.getSizeFromString(w[3], w[4])
+        except:
+            raise Exception('Could not get scratch quota for group %s, found string %s.' % (grp, ll[i]))
+        try:
+            groups[grp]['scratch_usage'] = utils.getSizeFromString(w[1], w[2])
+        except:
+            raise Exception('Could not get scratch usage for group %s, found string %s.' % (grp, ll[i]))
         i += 1
         if ll[i].strip() != '# User quotas':
             raise Exception('Expected "# User quotas" in line 4 of output.')
